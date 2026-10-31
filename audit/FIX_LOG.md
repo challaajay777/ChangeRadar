@@ -143,3 +143,25 @@
   1. Initialized state from `localStorage` (`changeradar_theme`, `changeradar_api_token`).
   2. Persisted settings to `localStorage` in `saveSettings`.
 - **Verification:** Frontend build clean (`npm run build`).
+
+---
+
+## Fix 10: [LOW] DEF-009: Eliminate Redundant Unwraps in Local API Handlers
+- **Component:** `crates/local_api/src/lib.rs`
+- **Issue:** Handlers utilized `serde_json::to_value(...).unwrap()`, which was redundant and could theoretically panic if custom serialization failed.
+- **Code Changes:**
+  Replaced all `to_value(...).unwrap()` calls across 14 API handlers with the zero-panic `serde_json::json!(...)` macro.
+- **Verification:** `cargo test -p changeradar-local-api`. **PASSED.**
+
+---
+
+## Fix 11: [LOW] Watcher Queue Overflow Logging & Tauri Identifier Format
+- **Components:** `crates/watcher/src/lib.rs`, `apps/desktop/src-tauri/tauri.conf.json`
+- **Issue:**
+  1. Silent event drop when channel capacity reached 10,000 without logging warning for reconciliation fallback.
+  2. Tauri bundle identifier had an upstream schema warning.
+- **Code Changes:**
+  1. In `FolderWatcherManager::dispatch_event`, matched `TrySendError::Full` to emit `warn!` log notifying that reconciliation scan will recover events.
+  2. Updated `apps/desktop/src-tauri/tauri.conf.json` identifier to `io.changeradar.desktop`.
+- **Verification:** `cargo clippy --workspace --all-targets --all-features -- -D warnings`. **0 warnings.**
+

@@ -169,6 +169,18 @@ impl FolderWatcherManager {
             change_kind,
         };
 
-        let _ = tx.try_send(raw);
+        if let Err(e) = tx.try_send(raw) {
+            match e {
+                mpsc::error::TrySendError::Full(_) => {
+                    warn!(
+                        "Filesystem watcher event queue is full for folder {}. Reconciliation will recover missed events.",
+                        folder_id
+                    );
+                }
+                mpsc::error::TrySendError::Closed(_) => {
+                    tracing::debug!("Filesystem watcher event channel closed for folder {}", folder_id);
+                }
+            }
+        }
     }
 }

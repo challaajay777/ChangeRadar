@@ -161,7 +161,7 @@ async fn get_status(State(state): State<ApiState>) -> impl IntoResponse {
     match state.intelligence.get_overview(true) {
         Ok(overview) => (
             StatusCode::OK,
-            Json(serde_json::to_value(overview).unwrap()),
+            Json(serde_json::json!(overview)),
         ),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -172,7 +172,7 @@ async fn get_status(State(state): State<ApiState>) -> impl IntoResponse {
 
 async fn list_folders(State(state): State<ApiState>) -> impl IntoResponse {
     match state.db.list_folders() {
-        Ok(folders) => (StatusCode::OK, Json(serde_json::to_value(folders).unwrap())),
+        Ok(folders) => (StatusCode::OK, Json(serde_json::json!(folders))),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
@@ -203,7 +203,7 @@ async fn add_folder(
     match state.db.add_folder(&folder) {
         Ok(_) => (
             StatusCode::CREATED,
-            Json(serde_json::to_value(folder).unwrap()),
+            Json(serde_json::json!(folder)),
         ),
         Err(e) => (
             StatusCode::BAD_REQUEST,
@@ -247,7 +247,7 @@ async fn list_events(
         .db
         .list_events(query.folder_id.as_deref(), limit, offset)
     {
-        Ok(events) => (StatusCode::OK, Json(serde_json::to_value(events).unwrap())),
+        Ok(events) => (StatusCode::OK, Json(serde_json::json!(events))),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
@@ -261,7 +261,7 @@ async fn list_files(
 ) -> impl IntoResponse {
     let limit = query.limit.unwrap_or(200);
     match state.db.list_files(query.folder_id.as_deref(), limit) {
-        Ok(files) => (StatusCode::OK, Json(serde_json::to_value(files).unwrap())),
+        Ok(files) => (StatusCode::OK, Json(serde_json::json!(files))),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
@@ -276,7 +276,7 @@ async fn list_file_versions(
     match state.db.list_versions_for_file(&file_id) {
         Ok(versions) => (
             StatusCode::OK,
-            Json(serde_json::to_value(versions).unwrap()),
+            Json(serde_json::json!(versions)),
         ),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -287,7 +287,7 @@ async fn list_file_versions(
 
 async fn list_snapshots(State(state): State<ApiState>) -> impl IntoResponse {
     match state.db.list_snapshots(None) {
-        Ok(snaps) => (StatusCode::OK, Json(serde_json::to_value(snaps).unwrap())),
+        Ok(snaps) => (StatusCode::OK, Json(serde_json::json!(snaps))),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
@@ -313,7 +313,7 @@ async fn create_snapshot(
     ) {
         Ok(snap) => (
             StatusCode::CREATED,
-            Json(serde_json::to_value(snap).unwrap()),
+            Json(serde_json::json!(snap)),
         ),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -327,7 +327,7 @@ async fn restore_snapshot(
     AxPath(id): AxPath<String>,
 ) -> impl IntoResponse {
     match state.snapshots.restore_snapshot(&id) {
-        Ok(res) => (StatusCode::OK, Json(serde_json::to_value(res).unwrap())),
+        Ok(res) => (StatusCode::OK, Json(serde_json::json!(res))),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
@@ -358,7 +358,7 @@ async fn recovery_preflight(
         .recovery
         .preflight_check(&payload.version_id, dest_path.as_deref())
     {
-        Ok(res) => (StatusCode::OK, Json(serde_json::to_value(res).unwrap())),
+        Ok(res) => (StatusCode::OK, Json(serde_json::json!(res))),
         Err(e) => (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({ "error": e.to_string() })),
@@ -378,7 +378,7 @@ async fn recovery_restore(
         .recovery
         .restore_version(&payload.version_id, dest_path.as_deref())
     {
-        Ok(res) => (StatusCode::OK, Json(serde_json::to_value(res).unwrap())),
+        Ok(res) => (StatusCode::OK, Json(serde_json::json!(res))),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
@@ -388,7 +388,7 @@ async fn recovery_restore(
 
 async fn get_storage(State(state): State<ApiState>) -> impl IntoResponse {
     match state.storage.get_stats() {
-        Ok(stats) => (StatusCode::OK, Json(serde_json::to_value(stats).unwrap())),
+        Ok(stats) => (StatusCode::OK, Json(serde_json::json!(stats))),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
@@ -496,7 +496,7 @@ async fn get_intelligence_score(State(state): State<ApiState>) -> impl IntoRespo
 
 async fn get_statistics(State(state): State<ApiState>) -> impl IntoResponse {
     match state.intelligence.get_activity_stats() {
-        Ok(stats) => (StatusCode::OK, Json(serde_json::to_value(stats).unwrap())),
+        Ok(stats) => (StatusCode::OK, Json(serde_json::json!(stats))),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
@@ -516,7 +516,7 @@ async fn search_handler(
 ) -> impl IntoResponse {
     let limit = query.limit.unwrap_or(50);
     match state.search.search(&query.q, limit) {
-        Ok(res) => (StatusCode::OK, Json(serde_json::to_value(res).unwrap())),
+        Ok(res) => (StatusCode::OK, Json(serde_json::json!(res))),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
@@ -586,13 +586,13 @@ async fn compare_versions(
         .unwrap_or_else(|| "file.txt".to_string());
 
     let output = UniversalComparator::compare(&file_name, &bytes_a, &bytes_b);
-    (StatusCode::OK, Json(serde_json::to_value(output).unwrap()))
+    (StatusCode::OK, Json(serde_json::json!(output)))
 }
 
 async fn list_plugins(State(state): State<ApiState>) -> impl IntoResponse {
     let manifests = state.plugins.list_manifests();
     (
         StatusCode::OK,
-        Json(serde_json::to_value(manifests).unwrap()),
+        Json(serde_json::json!(manifests)),
     )
 }
