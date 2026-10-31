@@ -144,7 +144,8 @@ impl VersionStore {
             let mut encoder = zstd::Encoder::new(dst_writer, 3)
                 .map_err(|e| VersionStoreError::Compression(e.to_string()))?;
             std::io::copy(&mut src_reader, &mut encoder)?;
-            encoder.finish()
+            encoder
+                .finish()
                 .map_err(|e| VersionStoreError::Compression(e.to_string()))?;
         }
 
@@ -216,12 +217,7 @@ impl VersionStore {
         notes: Option<String>,
     ) -> Result<FileVersion, VersionStoreError> {
         let existing = self.db.list_versions_for_file(file_id)?;
-        let next_version_number = existing
-            .iter()
-            .map(|v| v.version_number)
-            .max()
-            .unwrap_or(0)
-            + 1;
+        let next_version_number = existing.iter().map(|v| v.version_number).max().unwrap_or(0) + 1;
 
         let version = FileVersion {
             id: Uuid::new_v4().to_string(),
@@ -289,7 +285,8 @@ impl VersionStore {
     /// Delete an individual version record. Decrements the reference count of the underlying CAS object.
     pub fn delete_version(&self, version_id: &str) -> Result<(), VersionStoreError> {
         if let Some(version) = self.db.get_version(version_id)? {
-            self.db.decrement_content_object_ref(&version.content_hash)?;
+            self.db
+                .decrement_content_object_ref(&version.content_hash)?;
             self.db.delete_version(version_id)?;
         }
         Ok(())
@@ -325,27 +322,29 @@ impl VersionStore {
                 && entry.path().extension().and_then(|s| s.to_str()) == Some("zst")
             {
                 report.total_checked += 1;
-                let file_name = entry.path().file_stem().and_then(|s| s.to_str()).unwrap_or("");
+                let file_name = entry
+                    .path()
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("");
                 let expected_hash = file_name.to_string();
 
                 match fs::read(entry.path()) {
-                    Ok(compressed) => {
-                        match zstd::decode_all(compressed.as_slice()) {
-                            Ok(decompressed) => {
-                                let actual = hash_bytes(&decompressed);
-                                if actual == expected_hash {
-                                    report.valid_count += 1;
-                                } else {
-                                    report.corrupted_count += 1;
-                                    report.corrupted_hashes.push(expected_hash);
-                                }
-                            }
-                            Err(_) => {
+                    Ok(compressed) => match zstd::decode_all(compressed.as_slice()) {
+                        Ok(decompressed) => {
+                            let actual = hash_bytes(&decompressed);
+                            if actual == expected_hash {
+                                report.valid_count += 1;
+                            } else {
                                 report.corrupted_count += 1;
                                 report.corrupted_hashes.push(expected_hash);
                             }
                         }
-                    }
+                        Err(_) => {
+                            report.corrupted_count += 1;
+                            report.corrupted_hashes.push(expected_hash);
+                        }
+                    },
                     Err(_) => {
                         report.missing_count += 1;
                     }
@@ -393,7 +392,10 @@ mod tests {
     use tempfile::tempdir;
 
     fn setup_test_file(db: &Database, file_id: &str) {
-        let folder = changeradar_types::MonitoredFolder::new(format!("C:/test/{}", file_id), format!("Test {}", file_id));
+        let folder = changeradar_types::MonitoredFolder::new(
+            format!("C:/test/{}", file_id),
+            format!("Test {}", file_id),
+        );
         let _ = db.add_folder(&folder);
         let file = changeradar_types::FileRecord {
             id: file_id.to_string(),
@@ -418,7 +420,14 @@ mod tests {
         let store = VersionStore::new(tmp.path().join("objects"), db).unwrap();
 
         let data = b"Hello, ChangeRadar historical version!";
-        let ver = store.store_bytes(data, "file-123", ChangeKind::Created, Some("Test note".into())).unwrap();
+        let ver = store
+            .store_bytes(
+                data,
+                "file-123",
+                ChangeKind::Created,
+                Some("Test note".into()),
+            )
+            .unwrap();
         assert_eq!(ver.version_number, 1);
 
         let retrieved = store.get_version_bytes(&ver.id).unwrap();
@@ -438,13 +447,21 @@ mod tests {
         let store = VersionStore::new(tmp.path().join("objects"), db).unwrap();
 
         let data = b"Identical file content across versions";
-        let ver1 = store.store_bytes(data, "file-1", ChangeKind::Created, None).unwrap();
-        let ver2 = store.store_bytes(data, "file-2", ChangeKind::Created, None).unwrap();
+        let ver1 = store
+            .store_bytes(data, "file-1", ChangeKind::Created, None)
+            .unwrap();
+        let ver2 = store
+            .store_bytes(data, "file-2", ChangeKind::Created, None)
+            .unwrap();
 
         assert_eq!(ver1.content_hash, ver2.content_hash);
 
         // Check CAS object ref count
-        let obj = store.db.get_content_object(&ver1.content_hash).unwrap().unwrap();
+        let obj = store
+            .db
+            .get_content_object(&ver1.content_hash)
+            .unwrap()
+            .unwrap();
         assert_eq!(obj.reference_count, 2);
     }
 }

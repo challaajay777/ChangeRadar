@@ -112,10 +112,8 @@ async fn test_all_14_documented_api_endpoints() {
     let (state, temp) = setup_test_state();
 
     // Seed test data in SQLite
-    let test_folder = MonitoredFolder::new(
-        "C:/TestWatchFolder".to_string(),
-        "Test Folder".to_string(),
-    );
+    let test_folder =
+        MonitoredFolder::new("C:/TestWatchFolder".to_string(), "Test Folder".to_string());
     let folder_id = test_folder.id.clone();
     state.db.add_folder(&test_folder).unwrap();
 
@@ -126,7 +124,8 @@ async fn test_all_14_documented_api_endpoints() {
         file_name: "document.txt".to_string(),
         extension: "txt".to_string(),
         file_size: 27,
-        current_hash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855".to_string(),
+        current_hash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            .to_string(),
         is_deleted: false,
         created_at: Utc::now(),
         updated_at: Utc::now(),

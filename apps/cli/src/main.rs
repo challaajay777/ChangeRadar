@@ -1,6 +1,4 @@
-use changeradar_core::{
-    ChangeRadarEngine, RetentionPolicy, UniversalComparator,
-};
+use changeradar_core::{ChangeRadarEngine, RetentionPolicy, UniversalComparator};
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
@@ -192,15 +190,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("\n╔══════════════════════════════════════════════════════╗");
                 println!("║                CHANGERADAR STATUS                    ║");
                 println!("╚══════════════════════════════════════════════════════╝");
-                println!("  Monitoring State:      {}", if overview.is_monitoring { "ACTIVE [ONLINE]" } else { "PAUSED" });
+                println!(
+                    "  Monitoring State:      {}",
+                    if overview.is_monitoring {
+                        "ACTIVE [ONLINE]"
+                    } else {
+                        "PAUSED"
+                    }
+                );
                 println!("  Radar Score:           {}/100", overview.radar_score);
                 println!("  Active Folders:        {}", overview.active_folders);
                 println!("  Total Tracked Files:   {}", overview.total_tracked_files);
                 println!("  Changes Today:         {}", overview.changes_today);
                 println!("  Stored Versions:       {}", overview.versions_stored);
-                println!("  Compressed CAS Size:   {} MB", overview.total_cas_bytes / (1024 * 1024));
-                println!("  Raw File Size:         {} MB", overview.uncompressed_bytes / (1024 * 1024));
-                println!("  Deduplication Savings: {:.1}%\n", overview.deduplication_savings_pct);
+                println!(
+                    "  Compressed CAS Size:   {} MB",
+                    overview.total_cas_bytes / (1024 * 1024)
+                );
+                println!(
+                    "  Raw File Size:         {} MB",
+                    overview.uncompressed_bytes / (1024 * 1024)
+                );
+                println!(
+                    "  Deduplication Savings: {:.1}%\n",
+                    overview.deduplication_savings_pct
+                );
             }
         }
 
@@ -210,7 +224,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if cli.json {
                     println!("{}", serde_json::to_string_pretty(&folder)?);
                 } else {
-                    println!("Successfully added monitored folder '{}' at {:?}", folder.display_name, folder.path);
+                    println!(
+                        "Successfully added monitored folder '{}' at {:?}",
+                        folder.display_name, folder.path
+                    );
                 }
             }
             FolderCommands::List => {
@@ -221,7 +238,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     println!("\nMonitored Folders ({} total):", list.len());
                     for f in list {
                         let status = if f.is_active { "ACTIVE" } else { "PAUSED" };
-                        println!("  - [{}] {} (ID: {}) -> {}", status, f.display_name, f.id, f.path);
+                        println!(
+                            "  - [{}] {} (ID: {}) -> {}",
+                            status, f.display_name, f.id, f.path
+                        );
                     }
                     println!();
                 }
@@ -290,7 +310,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     println!("\nTracked Files ({} total):", files.len());
                     for f in files {
                         let del = if f.is_deleted { " [DELETED]" } else { "" };
-                        println!("  - {} ({} bytes, ID: {}){}", f.relative_path, f.file_size, f.id, del);
+                        println!(
+                            "  - {} ({} bytes, ID: {}){}",
+                            f.relative_path, f.file_size, f.id, del
+                        );
                     }
                     println!();
                 }
@@ -300,7 +323,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if cli.json {
                     println!("{}", serde_json::to_string_pretty(&versions)?);
                 } else {
-                    println!("\nVersion History for file {} ({} versions):", file_id, versions.len());
+                    println!(
+                        "\nVersion History for file {} ({} versions):",
+                        file_id,
+                        versions.len()
+                    );
                     for v in versions {
                         let pin = if v.is_pinned { " [PINNED]" } else { "" };
                         let note = v.notes.as_deref().unwrap_or("-");
@@ -318,7 +345,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         },
 
-        Some(Commands::Compare { version_a, version_b }) => {
+        Some(Commands::Compare {
+            version_a,
+            version_b,
+        }) => {
             let bytes_a = engine.store.get_version_bytes(&version_a)?;
             let bytes_b = engine.store.get_version_bytes(&version_b)?;
             let out = UniversalComparator::compare("file.txt", &bytes_a, &bytes_b);
@@ -327,7 +357,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("{}", serde_json::to_string_pretty(&out)?);
             } else {
                 println!("\nComparison Summary: {}", out.summary);
-                println!("  Added: {}, Removed: {}, Modified: {}", out.added_count, out.removed_count, out.modified_count);
+                println!(
+                    "  Added: {}, Removed: {}, Modified: {}",
+                    out.added_count, out.removed_count, out.modified_count
+                );
                 if let Some(td) = out.text_diff {
                     println!("\nDiff:\n{}", td.unified_diff);
                 }
@@ -335,12 +368,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         Some(Commands::Snapshot { action }) => match action {
-            SnapshotCommands::Create { name, description, folder } => {
-                let snap = engine.snapshots.create_snapshot(folder.as_deref(), &name, description.as_deref())?;
+            SnapshotCommands::Create {
+                name,
+                description,
+                folder,
+            } => {
+                let snap = engine.snapshots.create_snapshot(
+                    folder.as_deref(),
+                    &name,
+                    description.as_deref(),
+                )?;
                 if cli.json {
                     println!("{}", serde_json::to_string_pretty(&snap)?);
                 } else {
-                    println!("Created snapshot '{}' (ID: {}) with {} files", snap.name, snap.id, snap.file_count);
+                    println!(
+                        "Created snapshot '{}' (ID: {}) with {} files",
+                        snap.name, snap.id, snap.file_count
+                    );
                 }
             }
             SnapshotCommands::List => {
@@ -350,25 +394,40 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 } else {
                     println!("\nSnapshots ({} total):", snaps.len());
                     for s in snaps {
-                        println!("  - '{}' | {} files | {} bytes | ID: {}", s.name, s.file_count, s.total_bytes, s.id);
+                        println!(
+                            "  - '{}' | {} files | {} bytes | ID: {}",
+                            s.name, s.file_count, s.total_bytes, s.id
+                        );
                     }
                     println!();
                 }
             }
             SnapshotCommands::Restore { snapshot_id } => {
                 let results = engine.snapshots.restore_snapshot(&snapshot_id)?;
-                println!("Restored {} files from snapshot {}", results.len(), snapshot_id);
+                println!(
+                    "Restored {} files from snapshot {}",
+                    results.len(),
+                    snapshot_id
+                );
             }
         },
 
-        Some(Commands::Restore { version_id, dest, force }) => {
-            let preflight = engine.recovery.preflight_check(&version_id, dest.as_deref())?;
+        Some(Commands::Restore {
+            version_id,
+            dest,
+            force,
+        }) => {
+            let preflight = engine
+                .recovery
+                .preflight_check(&version_id, dest.as_deref())?;
             if !force && !preflight.can_proceed {
                 eprintln!("Preflight check failed: {:?}", preflight.warning);
                 std::process::exit(1);
             }
 
-            let res = engine.recovery.restore_version(&version_id, dest.as_deref())?;
+            let res = engine
+                .recovery
+                .restore_version(&version_id, dest.as_deref())?;
             if cli.json {
                 println!("{}", serde_json::to_string_pretty(&res)?);
             } else {
@@ -386,15 +445,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("║             CONTENT-ADDRESSED STORAGE (CAS)          ║");
                 println!("╚══════════════════════════════════════════════════════╝");
                 println!("  Unique CAS Objects:    {}", stats.total_objects);
-                println!("  Compressed Size:       {} MB", stats.compressed_bytes / (1024 * 1024));
-                println!("  Raw Original Size:     {} MB", stats.raw_bytes / (1024 * 1024));
+                println!(
+                    "  Compressed Size:       {} MB",
+                    stats.compressed_bytes / (1024 * 1024)
+                );
+                println!(
+                    "  Raw Original Size:     {} MB",
+                    stats.raw_bytes / (1024 * 1024)
+                );
                 println!("  Deduplication Ratio:   {:.2}x", stats.deduplication_ratio);
                 println!("  Pinned Versions:       {}", stats.pinned_versions);
-                println!("  Metadata DB Size:      {} KB\n", stats.database_bytes / 1024);
+                println!(
+                    "  Metadata DB Size:      {} KB\n",
+                    stats.database_bytes / 1024
+                );
             }
         }
 
-        Some(Commands::Cleanup { preview, apply, max_age_days, max_versions }) => {
+        Some(Commands::Cleanup {
+            preview,
+            apply,
+            max_age_days,
+            max_versions,
+        }) => {
             let policy = RetentionPolicy {
                 max_versions_per_file: Some(max_versions),
                 max_age_days: Some(max_age_days),
@@ -407,9 +480,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     println!("{}", serde_json::to_string_pretty(&prev)?);
                 } else {
                     println!("\nRetention Cleanup Preview:");
-                    println!("  Candidate Versions to Prune: {}", prev.candidate_versions_count);
-                    println!("  Estimated Space Reclaimed:   {} MB", prev.estimated_reclaimed_bytes / (1024 * 1024));
-                    println!("  Files Affected:              {}", prev.affected_files_count);
+                    println!(
+                        "  Candidate Versions to Prune: {}",
+                        prev.candidate_versions_count
+                    );
+                    println!(
+                        "  Estimated Space Reclaimed:   {} MB",
+                        prev.estimated_reclaimed_bytes / (1024 * 1024)
+                    );
+                    println!(
+                        "  Files Affected:              {}",
+                        prev.affected_files_count
+                    );
                     println!("\nRun with --apply to execute cleanup and garbage collection.\n");
                 }
             } else if apply {
@@ -417,7 +499,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if cli.json {
                     println!("{}", serde_json::to_string_pretty(&gc)?);
                 } else {
-                    println!("Cleanup completed! Reclaimed {} bytes across {} objects.", gc.reclaimed_bytes, gc.deleted_objects_count);
+                    println!(
+                        "Cleanup completed! Reclaimed {} bytes across {} objects.",
+                        gc.reclaimed_bytes, gc.deleted_objects_count
+                    );
                 }
             }
         }
@@ -430,13 +515,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("\n╔══════════════════════════════════════════════════════╗");
                 println!("║                 CHANGERADAR DOCTOR                   ║");
                 println!("╚══════════════════════════════════════════════════════╝");
-                println!("  System Health:         {}", if doc.all_healthy { "HEALTHY (All OK)" } else { "ATTENTION NEEDED" });
+                println!(
+                    "  System Health:         {}",
+                    if doc.all_healthy {
+                        "HEALTHY (All OK)"
+                    } else {
+                        "ATTENTION NEEDED"
+                    }
+                );
                 println!("  Platform:              {}", doc.platform);
                 println!("  SQLite DB Integrity:   {}", doc.database_integrity);
                 println!("  Database File:         {}", doc.database_path);
                 println!("  CAS Valid Objects:     {}", doc.cas_integrity.valid_count);
-                println!("  CAS Corrupted Objects: {}", doc.cas_integrity.corrupted_count);
-                println!("  Monitored Folders:     {} (Active: {})", doc.monitored_folders_count, doc.active_folders_count);
+                println!(
+                    "  CAS Corrupted Objects: {}",
+                    doc.cas_integrity.corrupted_count
+                );
+                println!(
+                    "  Monitored Folders:     {} (Active: {})",
+                    doc.monitored_folders_count, doc.active_folders_count
+                );
                 println!("  Tracked Files:         {}\n", doc.total_tracked_files);
             }
         }
@@ -450,7 +548,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("  Config File Path:      {:?}", engine.paths.config_file);
                 println!("  API Port:              {}", cfg.api_port);
                 println!("  Theme:                 {}", cfg.theme);
-                println!("  Telemetry:             {} (Privacy guarantee: Always off)", cfg.telemetry_enabled);
+                println!(
+                    "  Telemetry:             {} (Privacy guarantee: Always off)",
+                    cfg.telemetry_enabled
+                );
                 println!("  Retention Days:        {}", cfg.retention_days);
                 println!("  Max Versions / File:   {}\n", cfg.max_versions_per_file);
             }

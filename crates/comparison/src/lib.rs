@@ -18,11 +18,7 @@ pub struct UniversalComparator;
 impl UniversalComparator {
     /// Automatically select the best comparison engine based on file extension and content.
     pub fn compare(file_name: &str, bytes_a: &[u8], bytes_b: &[u8]) -> ComparisonOutput {
-        let ext = file_name
-            .rsplit('.')
-            .next()
-            .unwrap_or("")
-            .to_lowercase();
+        let ext = file_name.rsplit('.').next().unwrap_or("").to_lowercase();
 
         match ext.as_str() {
             "json" => {
@@ -47,7 +43,8 @@ impl UniversalComparator {
             "pdf" => Self::compare_pdf(bytes_a, bytes_b),
             _ => {
                 // If content looks like valid UTF-8, treat as text
-                if let (Ok(_), Ok(_)) = (std::str::from_utf8(bytes_a), std::str::from_utf8(bytes_b)) {
+                if let (Ok(_), Ok(_)) = (std::str::from_utf8(bytes_a), std::str::from_utf8(bytes_b))
+                {
                     Self::compare_text(bytes_a, bytes_b)
                 } else {
                     Self::compare_binary(bytes_a, bytes_b)
@@ -132,7 +129,10 @@ impl UniversalComparator {
     }
 
     /// Structural comparison of JSON values.
-    pub fn compare_json(bytes_a: &[u8], bytes_b: &[u8]) -> Result<ComparisonOutput, ComparisonError> {
+    pub fn compare_json(
+        bytes_a: &[u8],
+        bytes_b: &[u8],
+    ) -> Result<ComparisonOutput, ComparisonError> {
         let val_a: serde_json::Value = serde_json::from_slice(bytes_a)
             .map_err(|e| ComparisonError::Failed(format!("Invalid JSON in original: {}", e)))?;
         let val_b: serde_json::Value = serde_json::from_slice(bytes_b)
@@ -360,7 +360,10 @@ impl UniversalComparator {
     }
 
     /// Compare images visually and perceptually.
-    pub fn compare_image(bytes_a: &[u8], bytes_b: &[u8]) -> Result<ComparisonOutput, ComparisonError> {
+    pub fn compare_image(
+        bytes_a: &[u8],
+        bytes_b: &[u8],
+    ) -> Result<ComparisonOutput, ComparisonError> {
         let img_a = image::load_from_memory(bytes_a)
             .map_err(|e| ComparisonError::Failed(format!("Failed to decode image A: {}", e)))?;
         let img_b = image::load_from_memory(bytes_b)
@@ -445,7 +448,10 @@ impl UniversalComparator {
                 buf.clear();
             } else if b == b')' && in_paren {
                 in_paren = false;
-                if buf.iter().all(|&c| (32..=126).contains(&c) || c == b'\n' || c == b'\r') {
+                if buf
+                    .iter()
+                    .all(|&c| (32..=126).contains(&c) || c == b'\n' || c == b'\r')
+                {
                     if let Ok(s) = std::str::from_utf8(&buf) {
                         extracted.push_str(s);
                         extracted.push('\n');
@@ -475,23 +481,14 @@ impl UniversalComparator {
         let sample_limit = 16.min(bytes_a.len()).min(bytes_b.len());
 
         if sample_limit > 0 {
-            hex_samples.push(format!(
-                "First bytes A: {:02x?}",
-                &bytes_a[0..sample_limit]
-            ));
-            hex_samples.push(format!(
-                "First bytes B: {:02x?}",
-                &bytes_b[0..sample_limit]
-            ));
+            hex_samples.push(format!("First bytes A: {:02x?}", &bytes_a[0..sample_limit]));
+            hex_samples.push(format!("First bytes B: {:02x?}", &bytes_b[0..sample_limit]));
         }
 
         let summary = if hash_a == hash_b {
             "Binary files have identical content".to_string()
         } else {
-            format!(
-                "Binary files differ: size changed by {} bytes",
-                diff_bytes
-            )
+            format!("Binary files differ: size changed by {} bytes", diff_bytes)
         };
 
         ComparisonOutput {

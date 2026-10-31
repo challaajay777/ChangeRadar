@@ -46,15 +46,10 @@ pub fn hash_reader<R: Read>(mut reader: R) -> Result<String, HashingError> {
 pub fn perceptual_hash_image(image_bytes: &[u8]) -> Result<u64, HashingError> {
     let img = image::load_from_memory(image_bytes)
         .map_err(|e| HashingError::ImageDecode(e.to_string()))?;
-    
+
     // Convert to grayscale and resize to 9 width x 8 height
     let gray = img.to_luma8();
-    let resized = image::imageops::resize(
-        &gray,
-        9,
-        8,
-        image::imageops::FilterType::Triangle,
-    );
+    let resized = image::imageops::resize(&gray, 9, 8, image::imageops::FilterType::Triangle);
 
     let mut hash: u64 = 0;
     let mut bit_pos = 0;

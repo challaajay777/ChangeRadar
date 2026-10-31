@@ -2,7 +2,7 @@ use changeradar_database::{Database, DatabaseError};
 use changeradar_types::{AnomalyAlert, ChangeKind, Priority, SystemOverview};
 use chrono::{Duration, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -64,7 +64,8 @@ impl IntelligenceEngine {
 
         // Transparent score calculation:
         // Base score = (changes_today * 4) + (active_folders * 6) + (anomalies * 25)
-        let raw_score = (changes_today * 4) + ((active_folders as u64) * 6) + ((anomalies as u64) * 25);
+        let raw_score =
+            (changes_today * 4) + ((active_folders as u64) * 6) + ((anomalies as u64) * 25);
         let radar_score = (raw_score.min(100)) as u32;
 
         let savings_pct = if storage_stats.raw_bytes > 0 && storage_stats.compressed_bytes > 0 {
@@ -99,7 +100,9 @@ impl IntelligenceEngine {
         // 1. Group events by date (last 7 days)
         let mut daily_counts: BTreeMap<String, u64> = BTreeMap::new();
         for i in 0..7 {
-            let day = (Utc::now() - Duration::days(i)).format("%Y-%m-%d").to_string();
+            let day = (Utc::now() - Duration::days(i))
+                .format("%Y-%m-%d")
+                .to_string();
             daily_counts.insert(day, 0);
         }
 
@@ -229,4 +232,20 @@ impl IntelligenceEngine {
     }
 }
 
-use std::collections::BTreeMap;
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_intelligence_overview_and_score() {
+        let db = Database::in_memory().unwrap();
+        let engine = IntelligenceEngine::new(db);
+
+        let overview = engine.get_overview(true).unwrap();
+        assert!(overview.is_monitoring);
+        assert_eq!(overview.radar_score, 0); // 0 when empty
+
+        let stats = engine.get_activity_stats().unwrap();
+        assert_eq!(stats.daily_changes.len(), 7);
+    }
+}

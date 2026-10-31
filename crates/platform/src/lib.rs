@@ -39,9 +39,18 @@ pub fn reveal_in_explorer<P: AsRef<Path>>(path: P) -> Result<(), PlatformError> 
 
 /// Return human-readable operating system platform identity.
 pub fn get_platform_info() -> String {
-    format!(
-        "{} ({})",
-        std::env::consts::OS,
-        std::env::consts::ARCH
-    )
+    format!("{} ({})", std::env::consts::OS, std::env::consts::ARCH)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_platform_info() {
+        let info = get_platform_info();
+        assert!(!info.is_empty());
+        assert!(info.contains(std::env::consts::OS));
+        assert!(info.contains(std::env::consts::ARCH));
+    }
 }

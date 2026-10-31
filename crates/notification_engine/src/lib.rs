@@ -22,7 +22,10 @@ impl NotificationEngine {
     }
 
     /// Evaluate rules for an incoming event and dispatch notifications if matched.
-    pub fn evaluate_event(&self, event: &FileEvent) -> Result<Vec<NotificationItem>, NotificationError> {
+    pub fn evaluate_event(
+        &self,
+        event: &FileEvent,
+    ) -> Result<Vec<NotificationItem>, NotificationError> {
         let rules = self.db.list_notification_rules()?;
         let mut dispatched = Vec::new();
 
@@ -96,5 +99,30 @@ impl NotificationEngine {
         };
         self.db.create_notification(&notif)?;
         Ok(notif)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_system_notification_creation_and_listing() {
+        let db = Database::in_memory().unwrap();
+        let engine = NotificationEngine::new(db.clone());
+
+        let notif = engine
+            .notify_system(
+                "Backup Completed",
+                "CAS safety backup was verified",
+                Priority::Normal,
+            )
+            .unwrap();
+        assert_eq!(notif.title, "Backup Completed");
+        assert!(!notif.is_read);
+
+        let list = db.list_notifications(10).unwrap();
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].id, notif.id);
     }
 }

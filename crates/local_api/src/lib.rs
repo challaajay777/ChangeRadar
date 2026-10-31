@@ -90,7 +90,10 @@ pub fn create_router(state: ApiState) -> Router {
         // 7. Events
         .route("/api/v1/events", get(list_events))
         // 8 & 9. Snapshots
-        .route("/api/v1/snapshots", get(list_snapshots).post(create_snapshot))
+        .route(
+            "/api/v1/snapshots",
+            get(list_snapshots).post(create_snapshot),
+        )
         .route("/api/v1/snapshots/{id}/restore", post(restore_snapshot))
         // 10. Compare
         .route("/api/v1/compare", post(compare_versions))
@@ -107,7 +110,10 @@ pub fn create_router(state: ApiState) -> Router {
         .route("/api/v1/search", get(search_handler))
         .route("/api/v1/plugins", get(list_plugins))
         // Middlewares
-        .layer(middleware::from_fn_with_state(state.clone(), auth_middleware))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            auth_middleware,
+        ))
         .layer(cors)
         .with_state(state)
 }
@@ -143,7 +149,10 @@ async fn get_health() -> impl IntoResponse {
 
 async fn get_status(State(state): State<ApiState>) -> impl IntoResponse {
     match state.intelligence.get_overview(true) {
-        Ok(overview) => (StatusCode::OK, Json(serde_json::to_value(overview).unwrap())),
+        Ok(overview) => (
+            StatusCode::OK,
+            Json(serde_json::to_value(overview).unwrap()),
+        ),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
@@ -172,20 +181,20 @@ async fn add_folder(
     State(state): State<ApiState>,
     Json(payload): Json<AddFolderReq>,
 ) -> impl IntoResponse {
-    let name = payload
-        .display_name
-        .or(payload.name)
-        .unwrap_or_else(|| {
-            PathBuf::from(&payload.path)
-                .file_name()
-                .and_then(|s| s.to_str())
-                .unwrap_or("Folder")
-                .to_string()
-        });
+    let name = payload.display_name.or(payload.name).unwrap_or_else(|| {
+        PathBuf::from(&payload.path)
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("Folder")
+            .to_string()
+    });
 
     let folder = MonitoredFolder::new(payload.path, name);
     match state.db.add_folder(&folder) {
-        Ok(_) => (StatusCode::CREATED, Json(serde_json::to_value(folder).unwrap())),
+        Ok(_) => (
+            StatusCode::CREATED,
+            Json(serde_json::to_value(folder).unwrap()),
+        ),
         Err(e) => (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({ "error": e.to_string() })),
@@ -198,7 +207,12 @@ async fn delete_folder(
     AxPath(id): AxPath<String>,
 ) -> impl IntoResponse {
     match state.db.delete_folder(&id) {
-        Ok(_) => (StatusCode::OK, Json(serde_json::json!({ "success": true, "message": "Folder removed from monitoring" }))),
+        Ok(_) => (
+            StatusCode::OK,
+            Json(
+                serde_json::json!({ "success": true, "message": "Folder removed from monitoring" }),
+            ),
+        ),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
@@ -250,7 +264,10 @@ async fn list_file_versions(
     AxPath(file_id): AxPath<String>,
 ) -> impl IntoResponse {
     match state.db.list_versions_for_file(&file_id) {
-        Ok(versions) => (StatusCode::OK, Json(serde_json::to_value(versions).unwrap())),
+        Ok(versions) => (
+            StatusCode::OK,
+            Json(serde_json::to_value(versions).unwrap()),
+        ),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
@@ -284,7 +301,10 @@ async fn create_snapshot(
         &payload.name,
         payload.description.as_deref(),
     ) {
-        Ok(snap) => (StatusCode::CREATED, Json(serde_json::to_value(snap).unwrap())),
+        Ok(snap) => (
+            StatusCode::CREATED,
+            Json(serde_json::to_value(snap).unwrap()),
+        ),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
@@ -551,7 +571,9 @@ async fn compare_versions(
     let file = ver_a
         .as_ref()
         .and_then(|v| state.db.get_file(&v.file_id).ok().flatten());
-    let file_name = file.map(|f| f.file_name).unwrap_or_else(|| "file.txt".to_string());
+    let file_name = file
+        .map(|f| f.file_name)
+        .unwrap_or_else(|| "file.txt".to_string());
 
     let output = UniversalComparator::compare(&file_name, &bytes_a, &bytes_b);
     (StatusCode::OK, Json(serde_json::to_value(output).unwrap()))
@@ -559,5 +581,8 @@ async fn compare_versions(
 
 async fn list_plugins(State(state): State<ApiState>) -> impl IntoResponse {
     let manifests = state.plugins.list_manifests();
-    (StatusCode::OK, Json(serde_json::to_value(manifests).unwrap()))
+    (
+        StatusCode::OK,
+        Json(serde_json::to_value(manifests).unwrap()),
+    )
 }

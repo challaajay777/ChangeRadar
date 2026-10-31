@@ -19,7 +19,11 @@ struct DaemonCli {
     #[arg(long, default_value_t = 41820, help = "Developer API port")]
     port: u16,
 
-    #[arg(long, default_value_t = 300, help = "Periodic reconciliation interval in seconds")]
+    #[arg(
+        long,
+        default_value_t = 300,
+        help = "Periodic reconciliation interval in seconds"
+    )]
     reconcile_interval: u64,
 }
 
@@ -67,7 +71,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let folders = engine_recon.db.list_folders().unwrap_or_default();
             for f in folders {
                 if f.is_active {
-                    info!("Running periodic reconciliation scan for folder '{}'", f.display_name);
+                    info!(
+                        "Running periodic reconciliation scan for folder '{}'",
+                        f.display_name
+                    );
                     let _ = engine_recon.event_processor.reconcile_folder(&f.id);
                 }
             }

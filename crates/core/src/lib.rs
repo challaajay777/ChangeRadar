@@ -2,7 +2,9 @@ pub use changeradar_comparison::UniversalComparator;
 pub use changeradar_configuration::{AppConfig, AppPaths};
 pub use changeradar_database::{Database, DatabaseError};
 pub use changeradar_event_engine::{EventProcessor, ReconciliationSummary};
-pub use changeradar_hashing::{hash_bytes, hash_file, perceptual_hash_image, perceptual_similarity};
+pub use changeradar_hashing::{
+    hash_bytes, hash_file, perceptual_hash_image, perceptual_similarity,
+};
 pub use changeradar_intelligence::{ActivityStats, IntelligenceEngine};
 pub use changeradar_local_api::{start_api_server, ApiState};
 pub use changeradar_notification_engine::NotificationEngine;
@@ -134,17 +136,16 @@ impl ChangeRadarEngine {
                         let _ = notifs_clone.evaluate_event(&ev);
 
                         // Trigger plugins if content modified
-                        if ev.event_type == ChangeKind::Modified || ev.event_type == ChangeKind::Created {
+                        if ev.event_type == ChangeKind::Modified
+                            || ev.event_type == ChangeKind::Created
+                        {
                             if let (Some(new_h), Some(old_h)) = (ev.new_hash, ev.old_hash) {
                                 if let (Ok(new_b), Ok(old_b)) = (
                                     store_clone.get_version_bytes_by_hash(&new_h),
                                     store_clone.get_version_bytes_by_hash(&old_h),
                                 ) {
-                                    let results = plugins_clone.run_plugins_on_change(
-                                        &path_str,
-                                        &old_b,
-                                        &new_b,
-                                    );
+                                    let results = plugins_clone
+                                        .run_plugins_on_change(&path_str, &old_b, &new_b);
                                     for (_pid, msg) in results {
                                         let _ = notifs_clone.notify_system(
                                             "Plugin Alert",
@@ -180,15 +181,17 @@ impl ChangeRadarEngine {
     // FOLDER OPERATIONS
     // ==========================================
 
-    pub fn add_folder(&self, path: &str, name: Option<&str>) -> Result<MonitoredFolder, EngineError> {
+    pub fn add_folder(
+        &self,
+        path: &str,
+        name: Option<&str>,
+    ) -> Result<MonitoredFolder, EngineError> {
         let p = PathBuf::from(path);
-        let display_name = name.unwrap_or_else(|| {
-            p.file_name()
-                .and_then(|s| s.to_str())
-                .unwrap_or("Folder")
-        });
+        let display_name =
+            name.unwrap_or_else(|| p.file_name().and_then(|s| s.to_str()).unwrap_or("Folder"));
 
-        let folder = MonitoredFolder::new(p.to_string_lossy().to_string(), display_name.to_string());
+        let folder =
+            MonitoredFolder::new(p.to_string_lossy().to_string(), display_name.to_string());
         self.db.add_folder(&folder)?;
         self.watcher_mgr.watch_folder(folder.clone())?;
 
@@ -197,7 +200,10 @@ impl ChangeRadarEngine {
 
         self.db.record_audit_event(
             "FOLDER_ADDED",
-            &format!("Added monitored folder '{}' at {}", folder.display_name, folder.path),
+            &format!(
+                "Added monitored folder '{}' at {}",
+                folder.display_name, folder.path
+            ),
         )?;
 
         Ok(folder)

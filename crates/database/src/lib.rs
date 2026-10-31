@@ -85,7 +85,8 @@ impl Database {
 
         let rows = stmt.query_map([], |row| {
             let ignore_str: String = row.get(5)?;
-            let ignore_patterns: Vec<String> = serde_json::from_str(&ignore_str).unwrap_or_default();
+            let ignore_patterns: Vec<String> =
+                serde_json::from_str(&ignore_str).unwrap_or_default();
             let created_str: String = row.get(7)?;
             let updated_str: String = row.get(8)?;
             let max_bytes: Option<i64> = row.get(6)?;
@@ -98,8 +99,12 @@ impl Database {
                 scan_interval_secs: row.get::<_, i64>(4)? as u64,
                 ignore_patterns,
                 max_storage_bytes: max_bytes.map(|v| v as u64),
-                created_at: DateTime::parse_from_rfc3339(&created_str).unwrap().with_timezone(&Utc),
-                updated_at: DateTime::parse_from_rfc3339(&updated_str).unwrap().with_timezone(&Utc),
+                created_at: DateTime::parse_from_rfc3339(&created_str)
+                    .unwrap()
+                    .with_timezone(&Utc),
+                updated_at: DateTime::parse_from_rfc3339(&updated_str)
+                    .unwrap()
+                    .with_timezone(&Utc),
             })
         })?;
 
@@ -187,15 +192,23 @@ impl Database {
                     file_size: row.get::<_, i64>(5)? as u64,
                     current_hash: row.get(6)?,
                     is_deleted: row.get::<_, i32>(7)? != 0,
-                    created_at: DateTime::parse_from_rfc3339(&created_str).unwrap().with_timezone(&Utc),
-                    updated_at: DateTime::parse_from_rfc3339(&updated_str).unwrap().with_timezone(&Utc),
+                    created_at: DateTime::parse_from_rfc3339(&created_str)
+                        .unwrap()
+                        .with_timezone(&Utc),
+                    updated_at: DateTime::parse_from_rfc3339(&updated_str)
+                        .unwrap()
+                        .with_timezone(&Utc),
                 })
             })
             .optional()?;
         Ok(res)
     }
 
-    pub fn get_file_by_path(&self, folder_id: &str, relative_path: &str) -> Result<Option<FileRecord>, DatabaseError> {
+    pub fn get_file_by_path(
+        &self,
+        folder_id: &str,
+        relative_path: &str,
+    ) -> Result<Option<FileRecord>, DatabaseError> {
         let conn = self.conn.lock();
         let mut stmt = conn.prepare(
             "SELECT id, folder_id, relative_path, file_name, extension, file_size, current_hash, is_deleted, created_at, updated_at
@@ -215,15 +228,23 @@ impl Database {
                     file_size: row.get::<_, i64>(5)? as u64,
                     current_hash: row.get(6)?,
                     is_deleted: row.get::<_, i32>(7)? != 0,
-                    created_at: DateTime::parse_from_rfc3339(&created_str).unwrap().with_timezone(&Utc),
-                    updated_at: DateTime::parse_from_rfc3339(&updated_str).unwrap().with_timezone(&Utc),
+                    created_at: DateTime::parse_from_rfc3339(&created_str)
+                        .unwrap()
+                        .with_timezone(&Utc),
+                    updated_at: DateTime::parse_from_rfc3339(&updated_str)
+                        .unwrap()
+                        .with_timezone(&Utc),
                 })
             })
             .optional()?;
         Ok(res)
     }
 
-    pub fn list_files(&self, folder_id: Option<&str>, limit: usize) -> Result<Vec<FileRecord>, DatabaseError> {
+    pub fn list_files(
+        &self,
+        folder_id: Option<&str>,
+        limit: usize,
+    ) -> Result<Vec<FileRecord>, DatabaseError> {
         let conn = self.conn.lock();
         let query = if let Some(fid) = folder_id {
             format!(
@@ -252,8 +273,12 @@ impl Database {
                 file_size: row.get::<_, i64>(5)? as u64,
                 current_hash: row.get(6)?,
                 is_deleted: row.get::<_, i32>(7)? != 0,
-                created_at: DateTime::parse_from_rfc3339(&created_str).unwrap().with_timezone(&Utc),
-                updated_at: DateTime::parse_from_rfc3339(&updated_str).unwrap().with_timezone(&Utc),
+                created_at: DateTime::parse_from_rfc3339(&created_str)
+                    .unwrap()
+                    .with_timezone(&Utc),
+                updated_at: DateTime::parse_from_rfc3339(&updated_str)
+                    .unwrap()
+                    .with_timezone(&Utc),
             })
         })?;
 
@@ -314,7 +339,9 @@ impl Database {
                     compressed_size: row.get::<_, i64>(2)? as u64,
                     compression_algorithm: row.get(3)?,
                     reference_count: row.get::<_, i64>(4)? as u32,
-                    created_at: DateTime::parse_from_rfc3339(&created_str).unwrap().with_timezone(&Utc),
+                    created_at: DateTime::parse_from_rfc3339(&created_str)
+                        .unwrap()
+                        .with_timezone(&Utc),
                 })
             })
             .optional()?;
@@ -327,19 +354,20 @@ impl Database {
             "UPDATE content_objects SET reference_count = MAX(0, reference_count - 1) WHERE content_hash = ?1",
             params![hash],
         )?;
-        let count: i64 = conn.query_row(
-            "SELECT reference_count FROM content_objects WHERE content_hash = ?1",
-            params![hash],
-            |row| row.get(0),
-        ).unwrap_or(0);
+        let count: i64 = conn
+            .query_row(
+                "SELECT reference_count FROM content_objects WHERE content_hash = ?1",
+                params![hash],
+                |row| row.get(0),
+            )
+            .unwrap_or(0);
         Ok(count as u32)
     }
 
     pub fn list_unreferenced_content_hashes(&self) -> Result<Vec<String>, DatabaseError> {
         let conn = self.conn.lock();
-        let mut stmt = conn.prepare(
-            "SELECT content_hash FROM content_objects WHERE reference_count = 0",
-        )?;
+        let mut stmt =
+            conn.prepare("SELECT content_hash FROM content_objects WHERE reference_count = 0")?;
         let rows = stmt.query_map([], |row| row.get(0))?;
         let mut res = Vec::new();
         for r in rows {
@@ -350,7 +378,10 @@ impl Database {
 
     pub fn delete_content_object(&self, hash: &str) -> Result<(), DatabaseError> {
         let conn = self.conn.lock();
-        conn.execute("DELETE FROM content_objects WHERE content_hash = ?1", params![hash])?;
+        conn.execute(
+            "DELETE FROM content_objects WHERE content_hash = ?1",
+            params![hash],
+        )?;
         Ok(())
     }
 
@@ -399,7 +430,9 @@ impl Database {
                     change_kind: kind_str.parse().unwrap_or(ChangeKind::Modified),
                     notes: row.get(6)?,
                     is_pinned: row.get::<_, i32>(7)? != 0,
-                    created_at: DateTime::parse_from_rfc3339(&created_str).unwrap().with_timezone(&Utc),
+                    created_at: DateTime::parse_from_rfc3339(&created_str)
+                        .unwrap()
+                        .with_timezone(&Utc),
                 })
             })
             .optional()?;
@@ -425,7 +458,9 @@ impl Database {
                 change_kind: kind_str.parse().unwrap_or(ChangeKind::Modified),
                 notes: row.get(6)?,
                 is_pinned: row.get::<_, i32>(7)? != 0,
-                created_at: DateTime::parse_from_rfc3339(&created_str).unwrap().with_timezone(&Utc),
+                created_at: DateTime::parse_from_rfc3339(&created_str)
+                    .unwrap()
+                    .with_timezone(&Utc),
             })
         })?;
 
@@ -461,7 +496,8 @@ impl Database {
 
     pub fn count_total_versions(&self) -> Result<u64, DatabaseError> {
         let conn = self.conn.lock();
-        let count: i64 = conn.query_row("SELECT COUNT(*) FROM file_versions", [], |row| row.get(0))?;
+        let count: i64 =
+            conn.query_row("SELECT COUNT(*) FROM file_versions", [], |row| row.get(0))?;
         Ok(count as u64)
     }
 
@@ -537,7 +573,9 @@ impl Database {
                 file_size_diff: row.get(8)?,
                 summary: row.get(9)?,
                 confidence: confidence_str.parse().unwrap_or(Confidence::Exact),
-                created_at: DateTime::parse_from_rfc3339(&created_str).unwrap().with_timezone(&Utc),
+                created_at: DateTime::parse_from_rfc3339(&created_str)
+                    .unwrap()
+                    .with_timezone(&Utc),
             })
         })?;
 
@@ -613,7 +651,8 @@ impl Database {
             )
         } else {
             "SELECT id, folder_id, name, description, file_count, total_bytes, created_at
-             FROM snapshots ORDER BY created_at DESC".to_string()
+             FROM snapshots ORDER BY created_at DESC"
+                .to_string()
         };
 
         let mut stmt = conn.prepare(&query)?;
@@ -626,7 +665,9 @@ impl Database {
                 description: row.get(3)?,
                 file_count: row.get::<_, i64>(4)? as u64,
                 total_bytes: row.get::<_, i64>(5)? as u64,
-                created_at: DateTime::parse_from_rfc3339(&created_str).unwrap().with_timezone(&Utc),
+                created_at: DateTime::parse_from_rfc3339(&created_str)
+                    .unwrap()
+                    .with_timezone(&Utc),
             })
         })?;
 
@@ -642,7 +683,10 @@ impl Database {
         Ok(snapshots.into_iter().find(|s| s.id == id))
     }
 
-    pub fn get_snapshot_items(&self, snapshot_id: &str) -> Result<Vec<SnapshotItem>, DatabaseError> {
+    pub fn get_snapshot_items(
+        &self,
+        snapshot_id: &str,
+    ) -> Result<Vec<SnapshotItem>, DatabaseError> {
         let conn = self.conn.lock();
         let mut stmt = conn.prepare(
             "SELECT snapshot_id, file_id, relative_path, version_id, content_hash, file_size
@@ -712,7 +756,9 @@ impl Database {
                 message: row.get(3)?,
                 priority: priority_str.parse().unwrap_or(Priority::Normal),
                 is_read: row.get::<_, i32>(5)? != 0,
-                created_at: DateTime::parse_from_rfc3339(&created_str).unwrap().with_timezone(&Utc),
+                created_at: DateTime::parse_from_rfc3339(&created_str)
+                    .unwrap()
+                    .with_timezone(&Utc),
             })
         })?;
 
@@ -725,7 +771,10 @@ impl Database {
 
     pub fn mark_notification_read(&self, id: &str) -> Result<(), DatabaseError> {
         let conn = self.conn.lock();
-        conn.execute("UPDATE notifications SET is_read = 1 WHERE id = ?1", params![id])?;
+        conn.execute(
+            "UPDATE notifications SET is_read = 1 WHERE id = ?1",
+            params![id],
+        )?;
         Ok(())
     }
 
@@ -770,7 +819,8 @@ impl Database {
 
         let rows = stmt.query_map([], |row| {
             let events_str: String = row.get(3)?;
-            let event_types: Vec<ChangeKind> = serde_json::from_str(&events_str).unwrap_or_default();
+            let event_types: Vec<ChangeKind> =
+                serde_json::from_str(&events_str).unwrap_or_default();
             let priority_str: String = row.get(6)?;
             let created_str: String = row.get(8)?;
             let min_bytes: Option<i64> = row.get(5)?;
@@ -784,7 +834,9 @@ impl Database {
                 min_size_bytes: min_bytes.map(|v| v as u64),
                 priority: priority_str.parse().unwrap_or(Priority::Normal),
                 is_active: row.get::<_, i32>(7)? != 0,
-                created_at: DateTime::parse_from_rfc3339(&created_str).unwrap().with_timezone(&Utc),
+                created_at: DateTime::parse_from_rfc3339(&created_str)
+                    .unwrap()
+                    .with_timezone(&Utc),
             })
         })?;
 
@@ -844,11 +896,13 @@ impl Database {
             |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
         )?;
 
-        let pinned: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM file_versions WHERE is_pinned = 1",
-            [],
-            |row| row.get(0),
-        ).unwrap_or(0);
+        let pinned: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM file_versions WHERE is_pinned = 1",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap_or(0);
 
         let db_bytes = std::fs::metadata(&self.db_path)
             .map(|m| m.len())

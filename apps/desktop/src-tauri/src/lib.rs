@@ -62,7 +62,11 @@ fn list_events(
     state
         .engine
         .db
-        .list_events(folder_id.as_deref(), limit.unwrap_or(100), offset.unwrap_or(0))
+        .list_events(
+            folder_id.as_deref(),
+            limit.unwrap_or(100),
+            offset.unwrap_or(0),
+        )
         .map_err(|e| e.to_string())
 }
 
@@ -109,12 +113,7 @@ fn compare_versions(
         .get_version_bytes(&version_b_id)
         .map_err(|e| e.to_string())?;
 
-    let ver_a = state
-        .engine
-        .db
-        .get_version(&version_a_id)
-        .ok()
-        .flatten();
+    let ver_a = state.engine.db.get_version(&version_a_id).ok().flatten();
     let file = ver_a
         .as_ref()
         .and_then(|v| state.engine.db.get_file(&v.file_id).ok().flatten());
@@ -280,7 +279,8 @@ fn reveal_in_explorer(path: String) -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let engine = ChangeRadarEngine::initialize(None).expect("Failed to initialize ChangeRadar Engine");
+    let engine =
+        ChangeRadarEngine::initialize(None).expect("Failed to initialize ChangeRadar Engine");
     let state = Arc::new(DesktopState { engine });
 
     tauri::Builder::default()

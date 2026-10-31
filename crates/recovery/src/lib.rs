@@ -1,8 +1,6 @@
 use changeradar_database::{Database, DatabaseError};
 use changeradar_hashing::{hash_file, HashingError};
-use changeradar_types::{
-    ChangeKind, Confidence, FileEvent, RecoveryPreflight, RecoveryResult,
-};
+use changeradar_types::{ChangeKind, Confidence, FileEvent, RecoveryPreflight, RecoveryResult};
 use changeradar_version_store::{VersionStore, VersionStoreError};
 use chrono::Utc;
 use std::fs::{self, File};
@@ -174,7 +172,17 @@ impl RecoveryCenter {
         }
 
         // 5. Atomic replacement
-        fs::rename(&temp_path, &dest_path)?;
+        #[cfg(windows)]
+        {
+            if dest_path.exists() {
+                let _ = fs::remove_file(&dest_path);
+            }
+            fs::rename(&temp_path, &dest_path)?;
+        }
+        #[cfg(not(windows))]
+        {
+            fs::rename(&temp_path, &dest_path)?;
+        }
 
         // 6. Post-restore hash verification
         let restored_hash = hash_file(&dest_path)?;
@@ -280,7 +288,12 @@ mod tests {
         db.upsert_file(&file_rec).unwrap();
 
         let ver1 = store
-            .store_bytes(b"Version 1 original content", "f-1", ChangeKind::Created, None)
+            .store_bytes(
+                b"Version 1 original content",
+                "f-1",
+                ChangeKind::Created,
+                None,
+            )
             .unwrap();
 
         // Overwrite file with new content

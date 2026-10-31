@@ -152,10 +152,40 @@ impl ChangeRadarPlugin for WordCounterPlugin {
             Some(format!(
                 "Word count: {} words ({} net shift)",
                 new_words,
-                if diff > 0 { format!("+{}", diff) } else { format!("{}", diff) }
+                if diff > 0 {
+                    format!("+{}", diff)
+                } else {
+                    format!("{}", diff)
+                }
             ))
         } else {
             None
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_builtin_plugins_registration() {
+        let registry = PluginRegistry::new();
+        let manifests = registry.list_manifests();
+        assert_eq!(manifests.len(), 2);
+        assert!(manifests.iter().any(|m| m.id == "plugin-log-analyzer"));
+        assert!(manifests.iter().any(|m| m.id == "plugin-word-counter"));
+    }
+
+    #[test]
+    fn test_word_counter_plugin_diff() {
+        let plugin = WordCounterPlugin;
+        let old_text = b"Hello world";
+        let new_text = b"Hello beautiful world from ChangeRadar";
+        let result = plugin.on_file_changed("doc.md", old_text, new_text);
+        assert!(result.is_some());
+        let msg = result.unwrap();
+        assert!(msg.contains("5 words"));
+        assert!(msg.contains("+3 net shift"));
     }
 }

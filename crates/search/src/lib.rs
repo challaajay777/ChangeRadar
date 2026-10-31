@@ -84,3 +84,25 @@ impl SearchEngine {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_unified_search_across_entities() {
+        let db = Database::in_memory().unwrap();
+        let folder =
+            MonitoredFolder::new("C:/Project/Research".to_string(), "Research".to_string());
+        db.add_folder(&folder).unwrap();
+
+        let searcher = SearchEngine::new(db);
+        let results = searcher.search("research", 10).unwrap();
+        assert_eq!(results.matched_folders.len(), 1);
+        assert_eq!(results.matched_folders[0].display_name, "Research");
+
+        let empty = searcher.search("", 10).unwrap();
+        assert!(empty.matched_files.is_empty());
+        assert!(empty.matched_folders.is_empty());
+    }
+}

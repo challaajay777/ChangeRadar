@@ -500,6 +500,7 @@ dependencies = [
  "dirs 5.0.1",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror 2.0.21",
  "tracing",
  "uuid",
@@ -733,6 +734,7 @@ dependencies = [
  "changeradar-version-store",
  "chrono",
  "serde",
+ "tempfile",
  "thiserror 2.0.21",
  "tracing",
 ]

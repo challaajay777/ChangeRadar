@@ -83,9 +83,7 @@ impl SnapshotEngine {
             "SNAPSHOT_CREATED",
             &format!(
                 "Created snapshot '{}' with {} files ({} bytes)",
-                name,
-                snapshot.file_count,
-                snapshot.total_bytes
+                name, snapshot.file_count, snapshot.total_bytes
             ),
         )?;
 
@@ -173,5 +171,37 @@ impl SnapshotEngine {
         )?;
 
         Ok(results)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use changeradar_version_store::VersionStore;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_snapshot_creation_and_listing() {
+        let tmp = tempdir().unwrap();
+        let db = Database::in_memory().unwrap();
+        let store = VersionStore::new(tmp.path().join("objects"), db.clone()).unwrap();
+        let recovery = RecoveryCenter::new(db.clone(), store);
+        let snapshots = SnapshotEngine::new(db.clone(), recovery);
+
+        let folder = changeradar_types::MonitoredFolder::new(
+            "C:/Project".to_string(),
+            "Project".to_string(),
+        );
+        db.add_folder(&folder).unwrap();
+
+        let snap = snapshots
+            .create_snapshot(Some(&folder.id), "Milestone 1", Some("First release"))
+            .unwrap();
+        assert_eq!(snap.name, "Milestone 1");
+        assert_eq!(snap.folder_id, Some(folder.id.clone()));
+
+        let list = db.list_snapshots(Some(&folder.id)).unwrap();
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].name, "Milestone 1");
     }
 }

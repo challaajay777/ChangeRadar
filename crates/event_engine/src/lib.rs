@@ -233,17 +233,15 @@ impl EventProcessor {
         }
 
         let mut summary = ReconciliationSummary::default();
-        let ignore_matcher = changeradar_watcher::ignore::IgnoreMatcher::new(&folder.ignore_patterns);
+        let ignore_matcher =
+            changeradar_watcher::ignore::IgnoreMatcher::new(&folder.ignore_patterns);
 
         // Map tracked files
         let existing_files = self.db.list_files(Some(folder_id), 1_000_000)?;
         let mut seen_paths = std::collections::HashSet::new();
 
         // Walk directory
-        for entry in WalkDir::new(&root_path)
-            .into_iter()
-            .filter_map(|e| e.ok())
-        {
+        for entry in WalkDir::new(&root_path).into_iter().filter_map(|e| e.ok()) {
             if !entry.file_type().is_file() {
                 continue;
             }
@@ -311,5 +309,47 @@ impl EventProcessor {
         );
 
         Ok(summary)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use changeradar_types::MonitoredFolder;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_reconciliation_scan_detects_new_and_deleted_files() {
+        let tmp = tempdir().unwrap();
+        let db = Database::in_memory().unwrap();
+        let store = VersionStore::new(tmp.path().join("objects"), db.clone()).unwrap();
+
+        let watch_dir = tmp.path().join("watch");
+        fs::create_dir_all(&watch_dir).unwrap();
+
+        let folder = MonitoredFolder::new(
+            watch_dir.to_string_lossy().to_string(),
+            "WatchDir".to_string(),
+        );
+        db.add_folder(&folder).unwrap();
+
+        let processor = EventProcessor::new(db.clone(), store);
+
+        // Initially 0 files
+        let sum1 = processor.reconcile_folder(&folder.id).unwrap();
+        assert_eq!(sum1.files_scanned, 0);
+
+        // Create a file on disk
+        let file_path = watch_dir.join("sample.txt");
+        fs::write(&file_path, b"Hello ChangeRadar Reconciliation").unwrap();
+
+        let sum2 = processor.reconcile_folder(&folder.id).unwrap();
+        assert_eq!(sum2.files_scanned, 1);
+        assert_eq!(sum2.files_created, 1);
+
+        // Delete file on disk and re-scan
+        fs::remove_file(&file_path).unwrap();
+        let sum3 = processor.reconcile_folder(&folder.id).unwrap();
+        assert_eq!(sum3.files_deleted, 1);
     }
 }

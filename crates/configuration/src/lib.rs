@@ -106,3 +106,34 @@ impl AppPaths {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_zero_telemetry_guarantee() {
+        let cfg = AppConfig::default();
+        assert!(!cfg.telemetry_enabled, "Telemetry must be false by default");
+        assert!(!cfg.api_token.is_empty());
+        assert_eq!(cfg.theme, "dark");
+    }
+
+    #[test]
+    fn test_app_paths_and_config_persistence() {
+        let tmp = tempdir().unwrap();
+        let paths = AppPaths::from_root(tmp.path()).unwrap();
+        assert!(paths.root_dir.exists());
+        assert!(paths.objects_dir.exists());
+
+        let mut cfg = paths.load_config();
+        assert!(!cfg.telemetry_enabled);
+
+        cfg.retention_days = 45;
+        paths.save_config(&cfg).unwrap();
+
+        let reloaded = paths.load_config();
+        assert_eq!(reloaded.retention_days, 45);
+    }
+}

@@ -24,7 +24,11 @@ async fn test_complete_e2e_changeradar_lifecycle() {
 
     // 4. Create initial files on disk
     let file1_path = monitored_root.join("report.txt");
-    fs::write(&file1_path, b"Version 1: Preliminary Analysis Report\nLine 2 data\n").unwrap();
+    fs::write(
+        &file1_path,
+        b"Version 1: Preliminary Analysis Report\nLine 2 data\n",
+    )
+    .unwrap();
 
     let file2_path = monitored_root.join("config.json");
     fs::write(&file2_path, br#"{"app":"ChangeRadar","version":1}"#).unwrap();
@@ -73,7 +77,11 @@ async fn test_complete_e2e_changeradar_lifecycle() {
     // 8. Test Snapshot Engine
     let snapshot = engine
         .snapshots
-        .create_snapshot(Some(&folder.id), "Pre-Recovery Milestone", Some("Before reverting report"))
+        .create_snapshot(
+            Some(&folder.id),
+            "Pre-Recovery Milestone",
+            Some("Before reverting report"),
+        )
         .unwrap();
     assert_eq!(snapshot.file_count, 2);
     assert_eq!(snapshot.name, "Pre-Recovery Milestone");

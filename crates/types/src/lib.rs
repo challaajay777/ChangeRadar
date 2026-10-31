@@ -413,3 +413,23 @@ pub struct BinaryDiffData {
     pub new_hash: String,
     pub hex_sample_diff: Vec<String>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_monitored_folder_defaults() {
+        let folder = MonitoredFolder::new("C:/Data".to_string(), "Data".to_string());
+        assert!(folder.is_active);
+        assert_eq!(folder.display_name, "Data");
+        assert!(!folder.id.is_empty());
+    }
+
+    #[test]
+    fn test_change_kind_display() {
+        assert_eq!(ChangeKind::Created.to_string(), "CREATED");
+        assert_eq!(ChangeKind::Modified.to_string(), "MODIFIED");
+        assert_eq!(ChangeKind::Deleted.to_string(), "DELETED");
+    }
+}

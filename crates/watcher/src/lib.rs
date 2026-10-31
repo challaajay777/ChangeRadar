@@ -89,7 +89,10 @@ impl FolderWatcherManager {
 
         if folder_path.exists() {
             watcher.watch(&folder_path, RecursiveMode::Recursive)?;
-            info!("Now watching folder '{}' at {:?}", folder.display_name, folder_path);
+            info!(
+                "Now watching folder '{}' at {:?}",
+                folder.display_name, folder_path
+            );
         }
 
         watchers.insert(

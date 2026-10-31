@@ -159,3 +159,24 @@ impl StorageManager {
         Ok(gc_report)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_storage_stats_and_retention_preview() {
+        let tmp = tempdir().unwrap();
+        let db = Database::in_memory().unwrap();
+        let store = VersionStore::new(tmp.path().join("objects"), db.clone()).unwrap();
+        let manager = StorageManager::new(db, store);
+
+        let stats = manager.get_stats().unwrap();
+        assert_eq!(stats.total_objects, 0);
+
+        let policy = RetentionPolicy::default();
+        let preview = manager.preview_cleanup(&policy).unwrap();
+        assert_eq!(preview.candidate_versions_count, 0);
+    }
+}

@@ -36,10 +36,13 @@ impl IgnoreMatcher {
 
     pub fn is_ignored<P: AsRef<Path>>(&self, path: P) -> bool {
         let p = path.as_ref();
-        
+
         // Fast checks for common hidden and temporary extensions
         if let Some(file_name) = p.file_name().and_then(|s| s.to_str()) {
-            if file_name.starts_with("~$") || file_name.ends_with(".tmp") || file_name.ends_with(".crdownload") {
+            if file_name.starts_with("~$")
+                || file_name.ends_with(".tmp")
+                || file_name.ends_with(".crdownload")
+            {
                 return true;
             }
             if file_name == ".DS_Store" || file_name == "Thumbs.db" || file_name == "desktop.ini" {
