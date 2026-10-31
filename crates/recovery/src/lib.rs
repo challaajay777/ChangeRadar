@@ -163,12 +163,25 @@ impl RecoveryCenter {
             }
         }
 
-        // 4. Atomic write: write to temp file in the same directory first
-        let temp_path = dest_path.with_extension(format!("tmp-restore-{}", &job_id[0..8]));
+        // 4. Atomic write: write to unique temp file in the same directory first
+        let temp_file_name = format!(".cr_restore_{}_{}.tmp", &job_id[0..8], Uuid::new_v4());
+        let temp_path = match dest_path.parent() {
+            Some(parent) => parent.join(temp_file_name),
+            None => PathBuf::from(temp_file_name),
+        };
         {
-            let mut tmp_file = File::create(&temp_path)?;
-            tmp_file.write_all(&content_bytes)?;
-            tmp_file.flush()?;
+            let mut tmp_file = match File::create(&temp_path) {
+                Ok(f) => f,
+                Err(e) => return Err(RecoveryError::Io(e)),
+            };
+            if let Err(e) = tmp_file.write_all(&content_bytes) {
+                let _ = fs::remove_file(&temp_path);
+                return Err(RecoveryError::Io(e));
+            }
+            if let Err(e) = tmp_file.flush() {
+                let _ = fs::remove_file(&temp_path);
+                return Err(RecoveryError::Io(e));
+            }
         }
 
         // 5. Atomic replacement
@@ -177,15 +190,26 @@ impl RecoveryCenter {
             if dest_path.exists() {
                 let _ = fs::remove_file(&dest_path);
             }
-            fs::rename(&temp_path, &dest_path)?;
+            if let Err(e) = fs::rename(&temp_path, &dest_path) {
+                let _ = fs::remove_file(&temp_path);
+                return Err(RecoveryError::Io(e));
+            }
         }
         #[cfg(not(windows))]
         {
-            fs::rename(&temp_path, &dest_path)?;
+            if let Err(e) = fs::rename(&temp_path, &dest_path) {
+                let _ = fs::remove_file(&temp_path);
+                return Err(RecoveryError::Io(e));
+            }
         }
 
         // 6. Post-restore hash verification
-        let restored_hash = hash_file(&dest_path)?;
+        let restored_hash = match hash_file(&dest_path) {
+            Ok(h) => h,
+            Err(e) => {
+                return Err(RecoveryError::Hashing(e));
+            }
+        };
         if restored_hash != version.content_hash {
             return Err(RecoveryError::PostRestoreMismatch {
                 expected: version.content_hash,

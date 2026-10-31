@@ -40,33 +40,95 @@ async function invokeTauri<T>(cmd: string, args: Record<string, unknown> = {}): 
 }
 
 async function fetchRest<T>(cmd: string, args: Record<string, unknown>): Promise<T> {
-  const methodMap: Record<string, { url: string; method: string }> = {
-    get_overview: { url: `${API_BASE}/status`, method: 'GET' },
-    list_folders: { url: `${API_BASE}/folders`, method: 'GET' },
-    add_folder: { url: `${API_BASE}/folders`, method: 'POST' },
-    list_events: { url: `${API_BASE}/events`, method: 'GET' },
-    list_files: { url: `${API_BASE}/files`, method: 'GET' },
-    list_snapshots: { url: `${API_BASE}/snapshots`, method: 'GET' },
-    create_snapshot: { url: `${API_BASE}/snapshots`, method: 'POST' },
-    get_storage_stats: { url: `${API_BASE}/storage`, method: 'GET' },
-    get_activity_stats: { url: `${API_BASE}/statistics`, method: 'GET' },
-    list_plugins: { url: `${API_BASE}/plugins`, method: 'GET' },
-    compare_versions: { url: `${API_BASE}/compare`, method: 'POST' },
-  };
+  const token = typeof window !== 'undefined' ? localStorage.getItem('changeradar_api_token') : null;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
 
-  const target = methodMap[cmd];
-  if (target) {
+  let targetUrl = '';
+  let method = 'GET';
+  let bodyData: unknown = undefined;
+
+  switch (cmd) {
+    case 'get_overview':
+      targetUrl = `${API_BASE}/status`;
+      break;
+    case 'list_folders':
+      targetUrl = `${API_BASE}/folders`;
+      break;
+    case 'add_folder':
+      targetUrl = `${API_BASE}/folders`;
+      method = 'POST';
+      bodyData = args;
+      break;
+    case 'list_events':
+      targetUrl = `${API_BASE}/events`;
+      break;
+    case 'list_files':
+      targetUrl = `${API_BASE}/files`;
+      break;
+    case 'list_file_versions':
+      targetUrl = `${API_BASE}/files/${args.file_id}/versions`;
+      break;
+    case 'list_snapshots':
+      targetUrl = `${API_BASE}/snapshots`;
+      break;
+    case 'create_snapshot':
+      targetUrl = `${API_BASE}/snapshots`;
+      method = 'POST';
+      bodyData = args;
+      break;
+    case 'get_storage_stats':
+      targetUrl = `${API_BASE}/storage`;
+      break;
+    case 'get_activity_stats':
+      targetUrl = `${API_BASE}/statistics`;
+      break;
+    case 'list_plugins':
+      targetUrl = `${API_BASE}/plugins`;
+      break;
+    case 'compare_versions':
+      targetUrl = `${API_BASE}/compare`;
+      method = 'POST';
+      bodyData = args;
+      break;
+    case 'recovery_preflight':
+      targetUrl = `${API_BASE}/recovery/preflight`;
+      method = 'POST';
+      bodyData = args;
+      break;
+    case 'recovery_restore':
+      targetUrl = `${API_BASE}/recovery/restore`;
+      method = 'POST';
+      bodyData = args;
+      break;
+    case 'search_query':
+      targetUrl = `${API_BASE}/search?q=${encodeURIComponent(String(args.query || ''))}`;
+      break;
+    case 'preview_cleanup':
+      targetUrl = `${API_BASE}/storage/cleanup`;
+      method = 'POST';
+      bodyData = { dry_run: true };
+      break;
+    default:
+      break;
+  }
+
+  if (targetUrl) {
     try {
-      const res = await fetch(target.url, {
-        method: target.method,
-        headers: { 'Content-Type': 'application/json' },
-        body: target.method === 'POST' ? JSON.stringify(args) : undefined,
+      const res = await fetch(targetUrl, {
+        method,
+        headers,
+        body: bodyData ? JSON.stringify(bodyData) : undefined,
       });
       if (res.ok) {
         return await res.json();
+      } else if (res.status === 401) {
+        console.warn('API returned 401 Unauthorized. Set Bearer token in Settings or localStorage.');
       }
-    } catch (_) {
-      // Offline / standalone browser preview fallback with rich realistic data
+    } catch (e) {
+      console.warn(`REST fetch failed for ${targetUrl}:`, e);
     }
   }
 

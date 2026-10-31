@@ -11,12 +11,19 @@ import {
 } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
-  const [theme, setTheme] = useState('dark');
+  const [theme, setTheme] = useState(() => localStorage.getItem('changeradar_theme') || 'dark');
+  const [apiToken, setApiToken] = useState(() => localStorage.getItem('changeradar_api_token') || '');
   const [apiPort, setApiPort] = useState(41820);
   const [scanInterval, setScanInterval] = useState(300);
   const [saved, setSaved] = useState(false);
 
   const saveSettings = () => {
+    localStorage.setItem('changeradar_theme', theme);
+    if (apiToken) {
+      localStorage.setItem('changeradar_api_token', apiToken);
+    } else {
+      localStorage.removeItem('changeradar_api_token');
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
@@ -119,6 +126,21 @@ export const SettingsPage: React.FC = () => {
             />
             <span className="text-[10px] text-[#A1A6B2]">
               Frequency of periodic disk vs SQLite state checks.
+            </span>
+          </div>
+          <div className="space-y-1 md:col-span-2">
+            <label className="text-xs font-semibold text-[#A1A6B2]">
+              API Bearer Token:
+            </label>
+            <input
+              type="password"
+              value={apiToken}
+              onChange={(e) => setApiToken(e.target.value)}
+              placeholder="Paste daemon token from ~/.changeradar/config.json"
+              className="w-full bg-[#20232B] border border-[#2C303A] rounded-lg p-2 text-xs text-[#F2F3F5] focus:outline-none focus:border-[#6C8CFF]"
+            />
+            <span className="text-[10px] text-[#A1A6B2]">
+              Bearer token for authenticating local REST queries when running via browser.
             </span>
           </div>
         </div>

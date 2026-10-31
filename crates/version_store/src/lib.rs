@@ -132,24 +132,56 @@ impl VersionStore {
         }
 
         // Stream and compress to temporary file first, then atomic rename
-        let temp_path = target_path.with_extension("tmp");
+        let temp_path = target_path.with_extension(format!("tmp.{}", Uuid::new_v4()));
         {
             let src = File::open(path)?;
             let mut src_reader = BufReader::new(src);
 
-            let dst = File::create(&temp_path)?;
+            let dst = match File::create(&temp_path) {
+                Ok(f) => f,
+                Err(e) => return Err(VersionStoreError::Io(e)),
+            };
             let dst_writer = BufWriter::new(dst);
 
             // Zstandard level 3 (high compression speed and great ratio)
-            let mut encoder = zstd::Encoder::new(dst_writer, 3)
-                .map_err(|e| VersionStoreError::Compression(e.to_string()))?;
-            std::io::copy(&mut src_reader, &mut encoder)?;
-            encoder
-                .finish()
-                .map_err(|e| VersionStoreError::Compression(e.to_string()))?;
+            let mut encoder = match zstd::Encoder::new(dst_writer, 3) {
+                Ok(enc) => enc,
+                Err(e) => {
+                    let _ = fs::remove_file(&temp_path);
+                    return Err(VersionStoreError::Compression(e.to_string()));
+                }
+            };
+            if let Err(e) = std::io::copy(&mut src_reader, &mut encoder) {
+                let _ = fs::remove_file(&temp_path);
+                return Err(VersionStoreError::Io(e));
+            }
+            if let Err(e) = encoder.finish() {
+                let _ = fs::remove_file(&temp_path);
+                return Err(VersionStoreError::Compression(e.to_string()));
+            }
         }
 
-        fs::rename(&temp_path, &target_path)?;
+        #[cfg(windows)]
+        {
+            if target_path.exists() {
+                let _ = fs::remove_file(&temp_path);
+            } else if let Err(e) = fs::rename(&temp_path, &target_path) {
+                let _ = fs::remove_file(&temp_path);
+                if !target_path.exists() {
+                    return Err(VersionStoreError::Io(e));
+                }
+            }
+        }
+        #[cfg(not(windows))]
+        {
+            if let Err(e) = fs::rename(&temp_path, &target_path) {
+                let _ = fs::remove_file(&temp_path);
+                if !target_path.exists() {
+                    return Err(VersionStoreError::Io(e));
+                }
+            }
+        }
+
         let compressed_size = fs::metadata(&target_path)?.len();
 
         let obj = ContentObject {
@@ -192,9 +224,32 @@ impl VersionStore {
         let compressed = zstd::encode_all(bytes, 3)
             .map_err(|e| VersionStoreError::Compression(e.to_string()))?;
 
-        let temp_path = target_path.with_extension("tmp");
-        fs::write(&temp_path, &compressed)?;
-        fs::rename(&temp_path, &target_path)?;
+        let temp_path = target_path.with_extension(format!("tmp.{}", Uuid::new_v4()));
+        if let Err(e) = fs::write(&temp_path, &compressed) {
+            let _ = fs::remove_file(&temp_path);
+            return Err(VersionStoreError::Io(e));
+        }
+
+        #[cfg(windows)]
+        {
+            if target_path.exists() {
+                let _ = fs::remove_file(&temp_path);
+            } else if let Err(e) = fs::rename(&temp_path, &target_path) {
+                let _ = fs::remove_file(&temp_path);
+                if !target_path.exists() {
+                    return Err(VersionStoreError::Io(e));
+                }
+            }
+        }
+        #[cfg(not(windows))]
+        {
+            if let Err(e) = fs::rename(&temp_path, &target_path) {
+                let _ = fs::remove_file(&temp_path);
+                if !target_path.exists() {
+                    return Err(VersionStoreError::Io(e));
+                }
+            }
+        }
 
         let obj = ContentObject {
             content_hash: hash.to_string(),

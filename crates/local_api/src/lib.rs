@@ -20,7 +20,7 @@ use serde::Deserialize;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::{AllowOrigin, Any, CorsLayer};
 use tracing::info;
 
 #[derive(Clone)]
@@ -71,7 +71,17 @@ async fn auth_middleware(
 /// Construct the Axum router for the ChangeRadar Local REST API.
 pub fn create_router(state: ApiState) -> Router {
     let cors = CorsLayer::new()
-        .allow_origin(Any)
+        .allow_origin(AllowOrigin::predicate(|origin, _| {
+            if let Ok(s) = origin.to_str() {
+                s.starts_with("http://localhost:")
+                    || s.starts_with("http://127.0.0.1:")
+                    || s.starts_with("tauri://")
+                    || s.starts_with("http://tauri.localhost")
+                    || s.starts_with("https://tauri.localhost")
+            } else {
+                false
+            }
+        }))
         .allow_methods(Any)
         .allow_headers(Any);
 

@@ -366,8 +366,12 @@ impl Database {
 
     pub fn list_unreferenced_content_hashes(&self) -> Result<Vec<String>, DatabaseError> {
         let conn = self.conn.lock();
-        let mut stmt =
-            conn.prepare("SELECT content_hash FROM content_objects WHERE reference_count = 0")?;
+        let mut stmt = conn.prepare(
+            "SELECT content_hash FROM content_objects 
+             WHERE reference_count = 0 
+               AND content_hash NOT IN (SELECT content_hash FROM file_versions)
+               AND content_hash NOT IN (SELECT content_hash FROM snapshot_items)",
+        )?;
         let rows = stmt.query_map([], |row| row.get(0))?;
         let mut res = Vec::new();
         for r in rows {
@@ -890,11 +894,19 @@ impl Database {
 
     pub fn get_storage_stats(&self) -> Result<StorageStats, DatabaseError> {
         let conn = self.conn.lock();
-        let (total_objects, comp_bytes, raw_bytes): (i64, i64, i64) = conn.query_row(
+        let (total_objects, comp_bytes, unique_raw_bytes): (i64, i64, i64) = conn.query_row(
             "SELECT COUNT(*), COALESCE(SUM(compressed_size), 0), COALESCE(SUM(original_size), 0) FROM content_objects",
             [],
             |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
         )?;
+
+        let total_logical_raw_bytes: i64 = conn
+            .query_row(
+                "SELECT COALESCE(SUM(file_size), 0) FROM file_versions",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap_or(unique_raw_bytes);
 
         let pinned: i64 = conn
             .query_row(
@@ -909,7 +921,7 @@ impl Database {
             .unwrap_or(0);
 
         let ratio = if comp_bytes > 0 {
-            (raw_bytes as f64) / (comp_bytes as f64)
+            (total_logical_raw_bytes as f64) / (comp_bytes as f64)
         } else {
             1.0
         };
@@ -917,7 +929,7 @@ impl Database {
         Ok(StorageStats {
             total_objects: total_objects as u64,
             compressed_bytes: comp_bytes as u64,
-            raw_bytes: raw_bytes as u64,
+            raw_bytes: total_logical_raw_bytes as u64,
             pinned_versions: pinned as u64,
             deduplication_ratio: (ratio * 100.0).round() / 100.0,
             database_bytes: db_bytes,

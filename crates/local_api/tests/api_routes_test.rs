@@ -551,3 +551,44 @@ async fn test_live_server_starts_and_remains_running() {
     // Terminate test server cleanly
     server_task.abort();
 }
+
+#[tokio::test]
+async fn test_cors_origin_restriction() {
+    let (state, _temp_dir) = setup_test_state();
+    let app = create_router(state);
+
+    // Request from unauthorized external domain
+    let req_untrusted = Request::builder()
+        .method("OPTIONS")
+        .uri("/api/v1/health")
+        .header("Origin", "https://malicious-website.com")
+        .header("Access-Control-Request-Method", "GET")
+        .body(Body::empty())
+        .unwrap();
+
+    let res_untrusted = app.clone().oneshot(req_untrusted).await.unwrap();
+    // Untrusted origin should NOT receive access-control-allow-origin
+    assert!(
+        res_untrusted
+            .headers()
+            .get("access-control-allow-origin")
+            .is_none(),
+        "Untrusted origin must NOT receive access-control-allow-origin"
+    );
+
+    // Request from trusted localhost origin
+    let req_trusted = Request::builder()
+        .method("OPTIONS")
+        .uri("/api/v1/health")
+        .header("Origin", "http://localhost:5173")
+        .header("Access-Control-Request-Method", "GET")
+        .body(Body::empty())
+        .unwrap();
+
+    let res_trusted = app.oneshot(req_trusted).await.unwrap();
+    let allow_origin = res_trusted.headers().get("access-control-allow-origin");
+    assert!(
+        allow_origin.is_some(),
+        "Trusted local origin http://localhost:5173 must receive access-control-allow-origin"
+    );
+}

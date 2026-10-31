@@ -67,8 +67,28 @@ impl PluginRegistry {
         let mut results = Vec::new();
         for (id, plugin) in &self.plugins {
             if plugin.manifest().is_enabled {
-                if let Some(msg) = plugin.on_file_changed(path, old_bytes, new_bytes) {
-                    results.push((id.clone(), msg));
+                let p = plugin.clone();
+                let path_str = path.to_string();
+                let old_vec = old_bytes.to_vec();
+                let new_vec = new_bytes.to_vec();
+                let plugin_id = id.clone();
+
+                let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
+                    p.on_file_changed(&path_str, &old_vec, &new_vec)
+                }));
+
+                match outcome {
+                    Ok(Some(msg)) => {
+                        results.push((plugin_id, msg));
+                    }
+                    Ok(None) => {}
+                    Err(err) => {
+                        tracing::error!(
+                            "Plugin '{}' panicked during file change processing: {:?}",
+                            plugin_id,
+                            err
+                        );
+                    }
                 }
             }
         }
