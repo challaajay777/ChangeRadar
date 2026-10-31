@@ -1,5 +1,5 @@
 use changeradar_core::{
-    ChangeRadarEngine, RetentionPolicy, UniversalComparator,
+    start_api_server, ApiState, ChangeRadarEngine, RetentionPolicy, UniversalComparator,
 };
 use std::fs;
 use tempfile::tempdir;
@@ -116,4 +116,61 @@ async fn test_complete_e2e_changeradar_lifecycle() {
     assert_eq!(doctor_report.cas_integrity.corrupted_count, 0);
     assert!(doctor_report.all_healthy);
     assert_eq!(doctor_report.monitored_folders_count, 1);
+}
+
+#[tokio::test]
+async fn test_daemon_api_startup_and_health() {
+    let temp_dir = tempfile::tempdir().unwrap();
+    let engine = ChangeRadarEngine::initialize(Some(temp_dir.path())).unwrap();
+
+    let api_state = ApiState {
+        db: engine.db.clone(),
+        store: engine.store.clone(),
+        intelligence: engine.intelligence.clone(),
+        recovery: engine.recovery.clone(),
+        snapshots: engine.snapshots.clone(),
+        storage: engine.storage_mgr.clone(),
+        search: engine.search.clone(),
+        plugins: engine.plugins.clone(),
+        api_token: engine.config.read().api_token.clone(),
+    };
+
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port = listener.local_addr().unwrap().port();
+    drop(listener);
+
+    let server_task = tokio::spawn(async move {
+        start_api_server(api_state, port).await.unwrap();
+    });
+
+    tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+
+    // Verify task did not panic and is actively running
+    assert!(!server_task.is_finished());
+
+    // Connect via TCP and query /api/v1/health with Bearer token
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let mut stream = tokio::net::TcpStream::connect(format!("127.0.0.1:{}", port))
+        .await
+        .unwrap();
+
+    let token = engine.config.read().api_token.clone();
+    let request_str = format!(
+        "GET /api/v1/health HTTP/1.1\r\nHost: 127.0.0.1:{}\r\nAuthorization: Bearer {}\r\nConnection: close\r\n\r\n",
+        port, token
+    );
+    stream.write_all(request_str.as_bytes()).await.unwrap();
+
+    let mut response = Vec::new();
+    stream.read_to_end(&mut response).await.unwrap();
+    let res_str = String::from_utf8_lossy(&response);
+
+    assert!(
+        res_str.contains("HTTP/1.1 200 OK"),
+        "Daemon API must serve 200 OK, got: {}",
+        res_str
+    );
+    assert!(res_str.contains("\"status\":\"healthy\""));
+
+    server_task.abort();
 }
