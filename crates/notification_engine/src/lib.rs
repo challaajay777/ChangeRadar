@@ -52,7 +52,7 @@ impl NotificationEngine {
 
             // Check size filter
             if let Some(min_size) = rule.min_size_bytes {
-                if (event.file_size_diff.abs() as u64) < min_size {
+                if event.file_size_diff.unsigned_abs() < min_size {
                     continue;
                 }
             }

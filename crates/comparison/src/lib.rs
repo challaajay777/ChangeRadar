@@ -445,7 +445,7 @@ impl UniversalComparator {
                 buf.clear();
             } else if b == b')' && in_paren {
                 in_paren = false;
-                if buf.iter().all(|&c| c >= 32 && c <= 126 || c == b'\n' || c == b'\r') {
+                if buf.iter().all(|&c| (32..=126).contains(&c) || c == b'\n' || c == b'\r') {
                     if let Ok(s) = std::str::from_utf8(&buf) {
                         extracted.push_str(s);
                         extracted.push('\n');

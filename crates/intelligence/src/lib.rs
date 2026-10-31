@@ -146,7 +146,7 @@ impl IntelligenceEngine {
                 });
             }
         }
-        top_modified.sort_by(|a, b| b.version_count.cmp(&a.version_count));
+        top_modified.sort_by_key(|a| std::cmp::Reverse(a.version_count));
         top_modified.truncate(10);
 
         let anomalies = self.detect_anomalies()?;
