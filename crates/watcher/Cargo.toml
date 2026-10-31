@@ -1,0 +1,18 @@
+[package]
+name = "changeradar-watcher"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+changeradar-types = { workspace = true }
+notify = { workspace = true }
+globset = { workspace = true }
+tokio = { workspace = true }
+parking_lot = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3.14"

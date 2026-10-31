@@ -1,0 +1,25 @@
+# Rust build artifacts
+target/
+**/*.rs.bk
+Cargo.lock.orig
+
+# Node & Frontend
+node_modules/
+dist/
+dist-release/
+dist-ssr/
+*.local
+
+# ChangeRadar runtime files & databases in dev
+ChangeRadarData/
+*.db
+*.db-wal
+*.db-shm
+*.log
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp

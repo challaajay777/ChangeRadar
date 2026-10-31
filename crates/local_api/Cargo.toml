@@ -1,0 +1,27 @@
+[package]
+name = "changeradar-local-api"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+changeradar-types = { workspace = true }
+changeradar-database = { workspace = true }
+changeradar-version-store = { workspace = true }
+changeradar-comparison = { workspace = true }
+changeradar-recovery = { workspace = true }
+changeradar-intelligence = { workspace = true }
+changeradar-snapshot-engine = { workspace = true }
+changeradar-storage-manager = { workspace = true }
+changeradar-search = { workspace = true }
+changeradar-plugin-api = { workspace = true }
+changeradar-configuration = { workspace = true }
+
+tokio = { workspace = true }
+axum = { workspace = true }
+tower-http = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }

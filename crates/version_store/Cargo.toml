@@ -1,0 +1,21 @@
+[package]
+name = "changeradar-version-store"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+changeradar-types = { workspace = true }
+changeradar-database = { workspace = true }
+changeradar-hashing = { workspace = true }
+zstd = { workspace = true }
+walkdir = { workspace = true }
+serde = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3.14"

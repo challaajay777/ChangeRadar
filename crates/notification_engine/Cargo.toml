@@ -1,0 +1,14 @@
+[package]
+name = "changeradar-notification-engine"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+changeradar-types = { workspace = true }
+changeradar-database = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }

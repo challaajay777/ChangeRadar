@@ -1,0 +1,22 @@
+[package]
+name = "changeradar-event-engine"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+changeradar-types = { workspace = true }
+changeradar-database = { workspace = true }
+changeradar-hashing = { workspace = true }
+changeradar-version-store = { workspace = true }
+changeradar-watcher = { workspace = true }
+tokio = { workspace = true }
+walkdir = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3.14"

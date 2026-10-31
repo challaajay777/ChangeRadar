@@ -1,0 +1,19 @@
+[package]
+name = "changeradar-snapshot-engine"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+changeradar-types = { workspace = true }
+changeradar-database = { workspace = true }
+changeradar-recovery = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3.14"
+changeradar-version-store = { workspace = true }

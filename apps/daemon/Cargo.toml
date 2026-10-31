@@ -1,0 +1,18 @@
+[package]
+name = "changeradar-daemon"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "changeradard"
+path = "src/main.rs"
+
+[dependencies]
+changeradar-core = { workspace = true }
+changeradar-types = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+clap = { workspace = true }

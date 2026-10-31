@@ -1,0 +1,93 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/types",
+    "crates/hashing",
+    "crates/database",
+    "crates/version_store",
+    "crates/storage_manager",
+    "crates/watcher",
+    "crates/event_engine",
+    "crates/comparison",
+    "crates/recovery",
+    "crates/intelligence",
+    "crates/notification_engine",
+    "crates/snapshot_engine",
+    "crates/search",
+    "crates/plugin_api",
+    "crates/configuration",
+    "crates/platform",
+    "crates/local_api",
+    "crates/core",
+    "apps/cli",
+    "apps/daemon",
+    "apps/desktop/src-tauri"
+]
+
+[workspace.package]
+version = "1.0.0"
+edition = "2021"
+authors = ["ChangeRadar Team <team@changeradar.io>"]
+license = "MIT"
+repository = "https://github.com/changeradar/changeradar"
+homepage = "https://changeradar.io"
+
+[workspace.dependencies]
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Async & Networking
+tokio = { version = "1.42", features = ["full"] }
+axum = { version = "0.8", features = ["tokio", "json"] }
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+
+# Database
+rusqlite = { version = "0.31", features = ["bundled"] }
+
+# Hashing & Compression
+blake3 = "1.5"
+zstd = "0.13"
+
+# Filesystem & Watching
+notify = "6.1"
+walkdir = "2.5"
+globset = "0.4"
+
+# Comparison & Text
+similar = { version = "2.6", features = ["text", "unicode"] }
+csv = "1.3"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp", "bmp"] }
+
+# CLI & Logging
+clap = { version = "4.5", features = ["derive", "env"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+# Error Handling & Utilities
+thiserror = "2.0"
+anyhow = "1.0"
+uuid = { version = "1.11", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+parking_lot = "0.12"
+dirs = "5.0"
+
+# Internal Crates
+changeradar-types = { path = "crates/types" }
+changeradar-hashing = { path = "crates/hashing" }
+changeradar-database = { path = "crates/database" }
+changeradar-version-store = { path = "crates/version_store" }
+changeradar-storage-manager = { path = "crates/storage_manager" }
+changeradar-watcher = { path = "crates/watcher" }
+changeradar-event-engine = { path = "crates/event_engine" }
+changeradar-comparison = { path = "crates/comparison" }
+changeradar-recovery = { path = "crates/recovery" }
+changeradar-intelligence = { path = "crates/intelligence" }
+changeradar-notification-engine = { path = "crates/notification_engine" }
+changeradar-snapshot-engine = { path = "crates/snapshot_engine" }
+changeradar-search = { path = "crates/search" }
+changeradar-plugin-api = { path = "crates/plugin_api" }
+changeradar-configuration = { path = "crates/configuration" }
+changeradar-platform = { path = "crates/platform" }
+changeradar-local-api = { path = "crates/local_api" }
+changeradar-core = { path = "crates/core" }
