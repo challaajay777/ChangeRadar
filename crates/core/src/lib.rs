@@ -127,7 +127,7 @@ impl ChangeRadarEngine {
         let plugins_clone = plugins;
         let store_clone = store;
 
-        tokio::spawn(async move {
+        let event_loop = async move {
             info!("Event processing loop started");
             while let Some(raw) = event_rx.recv().await {
                 let path_str = raw.path.to_string_lossy().to_string();
@@ -163,7 +163,23 @@ impl ChangeRadarEngine {
                     }
                 }
             }
-        });
+        };
+
+        if let Ok(handle) = tokio::runtime::Handle::try_current() {
+            handle.spawn(event_loop);
+        } else {
+            // Spawn dedicated background thread with Tokio runtime if called from non-Tokio context
+            let _ = std::thread::Builder::new()
+                .name("changeradar-event-loop".into())
+                .spawn(move || {
+                    if let Ok(rt) = tokio::runtime::Builder::new_current_thread()
+                        .enable_all()
+                        .build()
+                    {
+                        rt.block_on(event_loop);
+                    }
+                });
+        }
 
         // Auto-start monitoring existing active folders
         let folders = db.list_folders().unwrap_or_default();

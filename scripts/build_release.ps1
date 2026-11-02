@@ -51,7 +51,10 @@ if ($LASTEXITCODE -ne 0) {
 Copy-Item (Join-Path $ProjectRoot "target\release\changeradar.exe") -Destination (Join-Path $ReleaseDir "bin\changeradar.exe")
 Copy-Item (Join-Path $ProjectRoot "target\release\changeradard.exe") -Destination (Join-Path $ReleaseDir "bin\changeradard.exe")
 Copy-Item (Join-Path $ProjectRoot "target\release\changeradar-desktop.exe") -Destination (Join-Path $ReleaseDir "bin\changeradar-desktop.exe")
-Write-Host "  -> Copied changeradar.exe, changeradard.exe, and changeradar-desktop.exe" -ForegroundColor Green
+if (Test-Path (Join-Path $ProjectRoot "target\release\WebView2Loader.dll")) {
+    Copy-Item (Join-Path $ProjectRoot "target\release\WebView2Loader.dll") -Destination (Join-Path $ReleaseDir "bin\WebView2Loader.dll") -Force
+}
+Write-Host "  -> Copied changeradar.exe, changeradard.exe, changeradar-desktop.exe, and dependencies" -ForegroundColor Green
 
 # Copy Tauri Installers if built
 $MsiSrc = Join-Path $ProjectRoot "target\release\bundle\msi\ChangeRadar_1.0.0_x64_en-US.msi"
