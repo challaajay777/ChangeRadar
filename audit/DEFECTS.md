@@ -21,6 +21,8 @@
 | **DEF-008** | MEDIUM | `crates/database` | Garbage collection query did not defensively check active references in `snapshot_items` | **FIXED** |
 | **DEF-009** | LOW | `crates/local_api` | Redundant `to_value().unwrap()` in 16 handler return paths causing potential panics | **FIXED** |
 | **DEF-010** | LOW | `apps/desktop` | Settings page did not persist theme or API token across application restarts | **FIXED** |
+| **DEF-011** | CRITICAL | `crates/core` | `ChangeRadarEngine::initialize` panicked on non-Tokio threads (Tauri main thread) | **FIXED** |
+| **DEF-012** | HIGH | `scripts/build_release.ps1` | Standalone desktop executable missing `WebView2Loader.dll` dependency | **FIXED** |
 
 ---
 
@@ -163,3 +165,28 @@
   Clicking "Save Configuration" only toggled a temporary visual toast in local React state and never persisted theme or API tokens.
 - **Fix:**
   Added persistence to `localStorage` for theme (`changeradar_theme`) and API Bearer token (`changeradar_api_token`). Added API Token input field.
+
+---
+
+### DEF-011: Engine Initialization Panic on Non-Tokio Threads
+- **Severity:** Critical
+- **Component:** `crates/core/src/lib.rs` (lines 124–165)
+- **Root Cause:**
+  `ChangeRadarEngine::initialize` unconditionally called `tokio::spawn(async move { ... })`. When invoked from a non-Tokio context (such as Tauri 2 desktop's synchronous Windows STA main thread), it panicked with `there is no reactor running, must be called from the context of a Tokio 1.x runtime`.
+- **Fix:**
+  Checked `tokio::runtime::Handle::try_current()`. If present, dispatches to `handle.spawn`. If not present, spawns a dedicated background thread with its own `tokio::runtime::Builder::new_current_thread()`.
+- **Verification:**
+  Tested across workspace unit tests and live Tauri desktop workstation initialization.
+
+---
+
+### DEF-012: Missing WebView2Loader.dll in Standalone Release Output
+- **Severity:** High
+- **Component:** `scripts/build_release.ps1`
+- **Root Cause:**
+  Windows dynamically links WebView2 via `WebView2Loader.dll`. Running `changeradar-desktop.exe` directly outside of an installed environment failed with `STATUS_DLL_NOT_FOUND` (`0xC0000135`).
+- **Fix:**
+  Updated `build_release.ps1` to automatically copy `target/release/WebView2Loader.dll` into `dist-release/bin/` alongside the executable.
+- **Verification:**
+  Standalone portable execution verified without requiring prior system installation.
+

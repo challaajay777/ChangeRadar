@@ -15,8 +15,8 @@ An independent, skeptical, and evidence-driven engineering audit was conducted a
 
 ### Key Audit Highlights:
 - **Architecture Inspected:** 18 Rust workspace crates, 3 applications (CLI, Daemon, Desktop), 18 SQLite schema tables, and 14 React desktop workstation sections.
-- **Defects Identified:** 10 defects across security, storage calculation, plugin isolation, recovery temporary paths, and release packaging.
-- **Defects Remediated:** 10 / 10 defects fixed with zero regressions.
+- **Defects Identified:** 12 defects across security, storage calculation, plugin isolation, recovery temporary paths, desktop initialization on non-Tokio threads, and release packaging.
+- **Defects Remediated:** 12 / 12 defects fixed with zero regressions.
 - **Test Suite Expanded:** From 29 initial tests to **38 passing automated tests** covering 16 filesystem watcher scenarios, 9 recovery safety pipelines, 6 CAS and database storage operations, all 6 comparison engines, and API security.
 - **Desktop Application Packaged:** Built native Windows desktop executable (`changeradar-desktop.exe`, 36.1 MB), native WiX Windows MSI Installer (`ChangeRadar_1.0.0_x64_en-US.msi`, 11.1 MB), and native NSIS Setup Installer (`ChangeRadar_1.0.0_x64-setup.exe`, 7.56 MB).
 - **Zero Telemetry Verified:** 100% local-first, zero outbound network telemetry, strict loopback binding to `127.0.0.1`.

@@ -165,3 +165,38 @@
   2. Updated `apps/desktop/src-tauri/tauri.conf.json` identifier to `io.changeradar.desktop`.
 - **Verification:** `cargo clippy --workspace --all-targets --all-features -- -D warnings`. **0 warnings.**
 
+---
+
+## Fix 12: [CRITICAL] Desktop Application Non-Tokio Context Initialization
+- **Component:** `crates/core/src/lib.rs`
+- **Issue:** `ChangeRadarEngine::initialize` unconditionally invoked `tokio::spawn`, triggering a panic (`there is no reactor running, must be called from the context of a Tokio 1.x runtime`) when called from Tauri desktop's synchronous main thread.
+- **Code Changes:**
+  ```rust
+  if let Ok(handle) = tokio::runtime::Handle::try_current() {
+      handle.spawn(event_loop);
+  } else {
+      // Spawn dedicated background thread with Tokio runtime if called from non-Tokio context
+      let _ = std::thread::Builder::new()
+          .name("changeradar-event-loop".into())
+          .spawn(move || {
+              if let Ok(rt) = tokio::runtime::Builder::new_current_thread()
+                  .enable_all()
+                  .build()
+              {
+                  rt.block_on(event_loop);
+              }
+          });
+  }
+  ```
+- **Verification:** Tested both in Tokio asynchronous contexts (`cargo test --workspace`) and non-Tokio GUI contexts (`changeradar-desktop.exe`). **PASSED.**
+
+---
+
+## Fix 13: [HIGH] Standalone Desktop Packaging with WebView2Loader.dll
+- **Component:** `scripts/build_release.ps1`
+- **Issue:** Launching `dist-release/bin/changeradar-desktop.exe` directly resulted in `STATUS_DLL_NOT_FOUND` (`0xC0000135`) because `WebView2Loader.dll` was not placed in the portable binary folder.
+- **Code Changes:**
+  Added automatic discovery and copying of `target/release/WebView2Loader.dll` into `dist-release/bin/`.
+- **Verification:** Portable binary and NSIS installed application execute and initialize WebView2 runtime successfully.
+
+
